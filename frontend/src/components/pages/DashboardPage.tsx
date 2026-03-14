@@ -1,4 +1,4 @@
-import { type FolderMapping, type FolderScanSummary } from '../../lib/api'
+import { type FolderMapping, type FolderScanSummary, type ScanRun } from '../../lib/api'
 
 type DashboardPageProps = {
   onboardingReady: boolean
@@ -7,8 +7,8 @@ type DashboardPageProps = {
   profilesCount: number
   tagRulesCount: number
   scanRunsCount: number
-  interrogationScheduleLabel: string
-  interrogationScheduleEnabled: boolean
+  activeInventoryRun?: ScanRun
+  activeInterrogationRun?: ScanRun
   resultsCount: number
   latestScanAt: string | null
   scanActionLoading: boolean
@@ -32,8 +32,8 @@ export function DashboardPage({
   profilesCount,
   tagRulesCount,
   scanRunsCount,
-  interrogationScheduleLabel,
-  interrogationScheduleEnabled,
+  activeInventoryRun,
+  activeInterrogationRun,
   resultsCount,
   latestScanAt,
   scanActionLoading,
@@ -43,6 +43,17 @@ export function DashboardPage({
   onOpenMappingResults,
   onRunScanNow,
 }: DashboardPageProps) {
+  function formatRunProgress(scanRun?: ScanRun) {
+    if (!scanRun || scanRun.status !== 'running') {
+      return 'IDLE'
+    }
+
+    const total = Math.max(1, scanRun.total_files)
+    const processed = Math.min(scanRun.processed_files, total)
+    const percentComplete = Math.round((processed / total) * 100)
+    return `${percentComplete}% complete`
+  }
+
   const folderCounts = new Map(
     folderSummary
       .filter((summary) => summary.folder_mapping_id !== null)
@@ -81,9 +92,14 @@ export function DashboardPage({
       ok: scanRunsCount > 0,
     },
     {
-      label: 'Scheduled interrogation',
-      value: interrogationScheduleLabel,
-      ok: interrogationScheduleEnabled,
+      label: 'Inventory scan',
+      value: formatRunProgress(activeInventoryRun),
+      ok: activeInventoryRun?.status === 'running',
+    },
+    {
+      label: 'Interrogation scan',
+      value: formatRunProgress(activeInterrogationRun),
+      ok: activeInterrogationRun?.status === 'running',
     },
     {
       label: 'Cataloged media files',
