@@ -72,6 +72,26 @@ export function ScanResultsPage({
     return `${megabytesPerSecond.toFixed(2)} MB/s`
   }
 
+  function formatFileSize(sizeBytes: number | null | undefined) {
+    if (sizeBytes === null || sizeBytes === undefined || sizeBytes < 0) {
+      return 'n/a'
+    }
+
+    if (sizeBytes < 1024) {
+      return `${sizeBytes} B`
+    }
+
+    const units = ['KB', 'MB', 'GB', 'TB']
+    let value = sizeBytes / 1024
+    let unitIndex = 0
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024
+      unitIndex += 1
+    }
+
+    return `${value.toFixed(2)} ${units[unitIndex]}`
+  }
+
   function getTagBadge(result: MediaFileScanResult) {
     if (result.tag_status === 'tag_match') {
       return { label: 'Tag: Match', className: 'status-badge status-badge-ok' }
@@ -307,6 +327,7 @@ export function ScanResultsPage({
                 <th>Pixel format</th>
                 <th>Resolution</th>
                 <th>Bitrate</th>
+                <th>File size</th>
                 <th>Tag</th>
                 <th>State</th>
                 <th>Actions</th>
@@ -337,6 +358,7 @@ export function ScanResultsPage({
                     </td>
                     <td>{result.width ?? '?'}x{result.height ?? '?'}</td>
                     <td>{formatBitrateMBps(result.bitrate_kbps)}</td>
+                    <td>{formatFileSize(result.size_bytes)}</td>
                     <td>
                       <span className={tagBadge.className}>{tagBadge.label}</span>
                     </td>
