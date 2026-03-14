@@ -23,18 +23,19 @@ type MetricCard = {
   label: string
   value: string
   ok: boolean
+  showStatus?: boolean
 }
 
 export function DashboardPage({
   onboardingReady,
   missingRequirementsCount,
-  activeMappingsCount,
-  profilesCount,
-  tagRulesCount,
-  scanRunsCount,
+  activeMappingsCount: _activeMappingsCount,
+  profilesCount: _profilesCount,
+  tagRulesCount: _tagRulesCount,
+  scanRunsCount: _scanRunsCount,
   activeInventoryRun,
   activeInterrogationRun,
-  resultsCount,
+  resultsCount: _resultsCount,
   latestScanAt,
   scanActionLoading,
   scanActionMessage,
@@ -80,39 +81,16 @@ export function DashboardPage({
       ok: missingRequirementsCount === 0,
     },
     {
-      label: 'Active folder mappings',
-      value: String(activeMappingsCount),
-      ok: activeMappingsCount > 0,
-    },
-    {
-      label: 'Compliance profiles',
-      value: String(profilesCount),
-      ok: profilesCount > 0,
-    },
-    {
-      label: 'Metadata tag rules',
-      value: String(tagRulesCount),
-      ok: tagRulesCount > 0,
-    },
-    {
-      label: 'Scan runs',
-      value: String(scanRunsCount),
-      ok: scanRunsCount > 0,
-    },
-    {
       label: 'Inventory scan',
       value: formatRunProgress(activeInventoryRun),
       ok: activeInventoryRun?.status === 'running',
+      showStatus: false,
     },
     {
       label: 'Interrogation scan',
       value: formatRunProgress(activeInterrogationRun),
       ok: activeInterrogationRun?.status === 'running',
-    },
-    {
-      label: 'Cataloged media files',
-      value: String(resultsCount),
-      ok: resultsCount > 0,
+      showStatus: false,
     },
   ].filter((metricCard) => {
     if (metricCard.label === 'Onboarding status' && metricCard.ok) {
@@ -141,7 +119,11 @@ export function DashboardPage({
           <article className="metric-card" key={metricCard.label}>
             <p className="muted">{metricCard.label}</p>
             <p className="metric-value">{metricCard.value}</p>
-            <p className={metricCard.ok ? 'success' : 'error'}>{metricCard.ok ? 'OK' : 'Needs attention'}</p>
+            {metricCard.showStatus === false ? null : (
+              <p className={metricCard.ok ? 'success' : 'error'}>
+                {metricCard.ok ? 'OK' : 'Needs attention'}
+              </p>
+            )}
           </article>
         ))}
       </div>
