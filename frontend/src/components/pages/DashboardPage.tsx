@@ -154,7 +154,6 @@ export function DashboardPage({
                 type="button"
               >
                 <p className="mapping-name">{mapping.name}</p>
-                <p className="mapping-path">{mapping.source_path}</p>
                 <p className="dashboard-folder-count">{fileCount} files</p>
                 <p className="dashboard-folder-compliance">
                   {formatCompliancePercent(fileCount, compliantCount)}
