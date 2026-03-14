@@ -45,32 +45,32 @@ export function ScanResultsPage({
 
   function getQualityBadge(result: MediaFileScanResult) {
     if (result.quality_status === 'meets_profile') {
-      return { label: 'Quality: Meets', className: 'status-badge status-badge-quality-meets' }
+      return { label: 'Quality: Meets', className: 'status-badge status-badge-ok' }
     }
     if (result.quality_status === 'below_profile') {
-      return { label: 'Quality: Below', className: 'status-badge status-badge-quality-below' }
+      return { label: 'Quality: Below', className: 'status-badge status-badge-bad' }
     }
-    return { label: 'Quality: Unknown', className: 'status-badge status-badge-quality-unknown' }
+    return { label: 'Quality: Unknown', className: 'status-badge status-badge-bad' }
   }
 
   function getTagBadge(result: MediaFileScanResult) {
     if (result.tag_status === 'tag_match') {
-      return { label: 'Tag: Match', className: 'status-badge status-badge-tag-match' }
+      return { label: 'Tag: Match', className: 'status-badge status-badge-ok' }
     }
     if (result.tag_status === 'tag_mismatch') {
-      return { label: 'Tag: Mismatch', className: 'status-badge status-badge-tag-mismatch' }
+      return { label: 'Tag: Mismatch', className: 'status-badge status-badge-bad' }
     }
     if (result.tag_status === 'missing_tag') {
-      return { label: 'Tag: Missing', className: 'status-badge status-badge-tag-missing' }
+      return { label: 'Tag: Missing', className: 'status-badge status-badge-bad' }
     }
-    return { label: 'Tag: Unknown', className: 'status-badge status-badge-tag-unknown' }
+    return { label: 'Tag: Unknown', className: 'status-badge status-badge-bad' }
   }
 
   function getRemovalBadge(result: MediaFileScanResult) {
     if (result.is_removed) {
-      return { label: 'Removed', className: 'status-badge status-badge-removed' }
+      return { label: 'Removed', className: 'status-badge status-badge-bad' }
     }
-    return { label: 'Active', className: 'status-badge status-badge-active' }
+    return { label: 'Active', className: 'status-badge status-badge-ok' }
   }
 
   function getCodecBadge(result: MediaFileScanResult) {
@@ -80,20 +80,20 @@ export function ScanResultsPage({
     if (!expectedCodec || !actualCodec) {
       return {
         label: `Codec: ${actualCodec ?? 'Unknown'}`,
-        className: 'status-badge status-badge-codec-unknown',
+        className: 'status-badge status-badge-bad',
       }
     }
 
     if (actualCodec === expectedCodec) {
       return {
         label: `Codec: ${actualCodec}`,
-        className: 'status-badge status-badge-codec-match',
+        className: 'status-badge status-badge-ok',
       }
     }
 
     return {
       label: `Codec: ${actualCodec}`,
-      className: 'status-badge status-badge-codec-mismatch',
+      className: 'status-badge status-badge-bad',
     }
   }
 
@@ -104,27 +104,27 @@ export function ScanResultsPage({
     if (!expectedPixelFormat) {
       return {
         label: `Pixel format: ${actualPixelFormat ?? 'Unknown'}`,
-        className: 'status-badge status-badge-pixel-unknown',
+        className: 'status-badge status-badge-bad',
       }
     }
 
     if (!actualPixelFormat) {
       return {
         label: 'Pixel format: Unknown',
-        className: 'status-badge status-badge-pixel-unknown',
+        className: 'status-badge status-badge-bad',
       }
     }
 
     if (actualPixelFormat === expectedPixelFormat) {
       return {
         label: `Pixel format: ${actualPixelFormat}`,
-        className: 'status-badge status-badge-pixel-match',
+        className: 'status-badge status-badge-ok',
       }
     }
 
     return {
       label: `Pixel format: ${actualPixelFormat}`,
-      className: 'status-badge status-badge-pixel-mismatch',
+      className: 'status-badge status-badge-bad',
     }
   }
 
