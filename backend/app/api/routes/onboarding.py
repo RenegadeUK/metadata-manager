@@ -20,6 +20,7 @@ DEFAULT_SCAN_SETTINGS = {
     "scan.hard_delete_after_days": "14",
     "scan.inventory_interval_seconds": "3600",
     "scan.interrogation_interval_seconds": "3600",
+    "scan.interrogation_workers": "2",
 }
 
 
@@ -76,6 +77,7 @@ class ScanSettingsPayload(BaseModel):
     hard_delete_after_days: str = Field(alias="scan.hard_delete_after_days")
     inventory_interval_seconds: str = Field(alias="scan.inventory_interval_seconds")
     interrogation_interval_seconds: str = Field(alias="scan.interrogation_interval_seconds")
+    interrogation_workers: str = Field(alias="scan.interrogation_workers")
 
     model_config = {"populate_by_name": True}
 

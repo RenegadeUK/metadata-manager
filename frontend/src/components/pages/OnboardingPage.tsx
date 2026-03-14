@@ -569,6 +569,20 @@ export function OnboardingPage({
               required
             />
           </label>
+          <label>
+            Interrogation workers (1-8)
+            <input
+              value={scanSettingsForm['scan.interrogation_workers']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.interrogation_workers': event.target.value,
+                }))
+              }
+              required
+            />
+            <small className="muted">Use 2 by default. Values are clamped to 1-8.</small>
+          </label>
           <button disabled={onboardingSaving} type="submit">Save scan settings</button>
         </form>
       ) : null}

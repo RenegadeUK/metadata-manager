@@ -35,6 +35,7 @@ export const INITIAL_SCAN_SETTINGS: ScanSettings = {
   'scan.hard_delete_after_days': '14',
   'scan.inventory_interval_seconds': '3600',
   'scan.interrogation_interval_seconds': '3600',
+  'scan.interrogation_workers': '2',
 }
 
 export const SUCCESS_MESSAGE_TIMEOUT_MS = 3000

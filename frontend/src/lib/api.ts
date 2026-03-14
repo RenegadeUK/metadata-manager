@@ -48,6 +48,7 @@ export type ScanSettings = {
   'scan.hard_delete_after_days': string
   'scan.inventory_interval_seconds': string
   'scan.interrogation_interval_seconds': string
+  'scan.interrogation_workers': string
 }
 
 export type OnboardingStatus = {

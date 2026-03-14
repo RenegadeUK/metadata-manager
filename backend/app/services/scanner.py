@@ -4,6 +4,8 @@ import fnmatch
 import json
 import subprocess
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,23 @@ from app.models.scan_run import ScanRun
 
 
 _scan_thread_lock = threading.Lock()
+
+
+@dataclass
+class InventoryWorkerResult:
+    seen_result_ids: set[int]
+    processed_files: int
+    new_files: int
+    updated_files: int
+    error_files: int
+    last_error_message: str | None
+
+
+@dataclass
+class InterrogationWorkerResult:
+    is_success: bool
+    is_new: bool
+    error_message: str | None
 
 
 def _get_setting(db: Session, key: str, default: str) -> str:
@@ -46,6 +65,14 @@ def _parse_patterns(value: str) -> list[str]:
 
 def _matches_exclude(path_value: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatch(path_value, pattern) for pattern in patterns)
+
+
+def _parse_interrogation_workers(value: str, default: int = 2) -> int:
+    try:
+        parsed = int(value)
+    except ValueError:
+        return default
+    return max(1, min(8, parsed))
 
 
 def _collect_candidate_files(
@@ -302,6 +329,77 @@ def fail_abandoned_runs(db: Session) -> None:
     db.commit()
 
 
+def _inventory_worker(
+    run_id: int,
+    mapping_id: int,
+    file_paths: list[str],
+) -> InventoryWorkerResult:
+    worker_db = SessionLocal()
+    seen_result_ids: set[int] = set()
+    processed_files = 0
+    new_files = 0
+    updated_files = 0
+    error_files = 0
+    last_error_message: str | None = None
+
+    try:
+        for path_text in file_paths:
+            try:
+                file_path = Path(path_text)
+                stat = file_path.stat()
+                device_id = None if stat.st_dev is None else int(stat.st_dev)
+                inode = None if stat.st_ino is None else int(stat.st_ino)
+                existing = _lookup_scan_row(worker_db, file_path, device_id, inode)
+                is_new = existing is None
+                media_row = existing if existing is not None else MediaFileScan(
+                    file_path=str(file_path),
+                    file_name=file_path.name,
+                    extension=file_path.suffix.lower().lstrip("."),
+                )
+
+                now = datetime.now(timezone.utc)
+                media_row.file_name = file_path.name
+                media_row.file_path = str(file_path)
+                media_row.extension = file_path.suffix.lower().lstrip(".")
+                media_row.device_id = device_id
+                media_row.inode = inode
+                media_row.folder_mapping_id = mapping_id
+                media_row.scan_run_id = run_id
+                media_row.size_bytes = stat.st_size
+                media_row.modified_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+                media_row.is_removed = False
+                media_row.removed_at = None
+                media_row.last_seen_at = now
+                media_row.inventory_scanned_at = now
+
+                worker_db.add(media_row)
+                worker_db.commit()
+                worker_db.refresh(media_row)
+
+                processed_files += 1
+                if is_new:
+                    new_files += 1
+                else:
+                    updated_files += 1
+                seen_result_ids.add(media_row.id)
+            except Exception as worker_error:
+                worker_db.rollback()
+                processed_files += 1
+                error_files += 1
+                last_error_message = str(worker_error)
+    finally:
+        worker_db.close()
+
+    return InventoryWorkerResult(
+        seen_result_ids=seen_result_ids,
+        processed_files=processed_files,
+        new_files=new_files,
+        updated_files=updated_files,
+        error_files=error_files,
+        last_error_message=last_error_message,
+    )
+
+
 def _inventory_scan_impl(db: Session, run: ScanRun) -> ScanRun:
     active_mappings = (
         db.query(FolderMapping).filter(FolderMapping.is_active.is_(True)).order_by(FolderMapping.id.asc()).all()
@@ -323,61 +421,45 @@ def _inventory_scan_impl(db: Session, run: ScanRun) -> ScanRun:
     try:
         candidates = _collect_candidate_files(active_mappings, include_extensions, exclude_patterns)
         active_mapping_ids = [mapping.id for mapping in active_mappings]
-        run.total_files = len(candidates)
+
+        mapping_file_paths: dict[int, list[str]] = {mapping.id: [] for mapping in active_mappings}
+        dedupe_paths: set[str] = set()
+        for mapping, file_path in candidates:
+            file_path_text = str(file_path)
+            if file_path_text in dedupe_paths:
+                continue
+            dedupe_paths.add(file_path_text)
+            mapping_file_paths[mapping.id].append(file_path_text)
+
+        run.total_files = len(dedupe_paths)
         db.add(run)
         db.commit()
 
         seen_result_ids: set[int] = set()
-
-        for mapping, file_path in candidates:
-            try:
-                stat = file_path.stat()
-                device_id = None if stat.st_dev is None else int(stat.st_dev)
-                inode = None if stat.st_ino is None else int(stat.st_ino)
-                existing = _lookup_scan_row(db, file_path, device_id, inode)
-                is_new = existing is None
-                media_row = existing if existing is not None else MediaFileScan(
-                    file_path=str(file_path),
-                    file_name=file_path.name,
-                    extension=file_path.suffix.lower().lstrip("."),
+        worker_futures = []
+        with ThreadPoolExecutor(max_workers=max(1, len(active_mappings))) as executor:
+            for mapping in active_mappings:
+                file_paths = mapping_file_paths.get(mapping.id, [])
+                if not file_paths:
+                    continue
+                worker_futures.append(
+                    executor.submit(
+                        _inventory_worker,
+                        run.id,
+                        mapping.id,
+                        file_paths,
+                    )
                 )
 
-                now = datetime.now(timezone.utc)
-                media_row.file_name = file_path.name
-                media_row.file_path = str(file_path)
-                media_row.extension = file_path.suffix.lower().lstrip(".")
-                media_row.device_id = device_id
-                media_row.inode = inode
-                media_row.folder_mapping_id = mapping.id
-                media_row.scan_run_id = run.id
-                media_row.size_bytes = stat.st_size
-                media_row.modified_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
-                media_row.is_removed = False
-                media_row.removed_at = None
-                media_row.last_seen_at = now
-                media_row.inventory_scanned_at = now
-
-                db.add(media_row)
-
-                run.processed_files += 1
-                if is_new:
-                    run.new_files += 1
-                else:
-                    run.updated_files += 1
-                db.add(run)
-                db.commit()
-                db.refresh(media_row)
-                seen_result_ids.add(media_row.id)
-            except Exception as file_error:
-                db.rollback()
-                persisted_run = db.get(ScanRun, run.id)
-                if persisted_run is None:
-                    raise
-                run = persisted_run
-
-                run.processed_files += 1
-                run.error_files += 1
-                run.message = str(file_error)
+            for worker_future in as_completed(worker_futures):
+                worker_result = worker_future.result()
+                run.processed_files += worker_result.processed_files
+                run.new_files += worker_result.new_files
+                run.updated_files += worker_result.updated_files
+                run.error_files += worker_result.error_files
+                if worker_result.last_error_message:
+                    run.message = worker_result.last_error_message
+                seen_result_ids.update(worker_result.seen_result_ids)
                 db.add(run)
                 db.commit()
 
@@ -420,6 +502,80 @@ def _inventory_scan_impl(db: Session, run: ScanRun) -> ScanRun:
         raise
 
 
+def _interrogation_worker(
+    run_id: int,
+    result_id: int,
+    timeout_seconds: int,
+    profile_id: int,
+    tag_rule_id: int,
+) -> InterrogationWorkerResult:
+    worker_db = SessionLocal()
+    try:
+        media_row = worker_db.get(MediaFileScan, result_id)
+        if media_row is None:
+            return InterrogationWorkerResult(is_success=False, is_new=False, error_message="Scan result not found")
+
+        active_profile = worker_db.get(QualityProfile, profile_id)
+        active_tag_rule = worker_db.get(MetadataTagRule, tag_rule_id)
+        if active_profile is None:
+            return InterrogationWorkerResult(
+                is_success=False,
+                is_new=False,
+                error_message="No active quality profile configured",
+            )
+        if active_tag_rule is None:
+            return InterrogationWorkerResult(
+                is_success=False,
+                is_new=False,
+                error_message="No active metadata tag rule configured",
+            )
+
+        file_path = Path(media_row.file_path)
+        if not file_path.exists() or not file_path.is_file():
+            return InterrogationWorkerResult(
+                is_success=False,
+                is_new=False,
+                error_message=f"File missing during interrogation: {media_row.file_path}",
+            )
+
+        stat = file_path.stat()
+        probe_data = _probe_media(file_path, timeout_seconds)
+        quality_status = _evaluate_quality(probe_data, active_profile)
+        tag_status, tag_value = _evaluate_tag(probe_data, active_tag_rule)
+
+        now = datetime.now(timezone.utc)
+        is_first_interrogation = media_row.interrogated_at is None
+
+        media_row.file_name = file_path.name
+        media_row.extension = file_path.suffix.lower().lstrip(".")
+        media_row.size_bytes = stat.st_size
+        media_row.modified_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+        media_row.scan_run_id = run_id
+        media_row.codec = probe_data.get("codec")
+        media_row.pixel_format = probe_data.get("pixel_format")
+        media_row.width = probe_data.get("width")
+        media_row.height = probe_data.get("height")
+        media_row.bitrate_kbps = probe_data.get("bitrate_kbps")
+        media_row.video_profile = probe_data.get("video_profile")
+        media_row.tag_key = active_tag_rule.tag_key
+        media_row.tag_value = tag_value
+        media_row.quality_status = quality_status
+        media_row.tag_status = tag_status
+        media_row.probe_error = probe_data.get("probe_error")
+        media_row.interrogated_at = now
+        media_row.scanned_at = now
+
+        worker_db.add(media_row)
+        worker_db.commit()
+
+        return InterrogationWorkerResult(is_success=True, is_new=is_first_interrogation, error_message=None)
+    except Exception as worker_error:
+        worker_db.rollback()
+        return InterrogationWorkerResult(is_success=False, is_new=False, error_message=str(worker_error))
+    finally:
+        worker_db.close()
+
+
 def _interrogation_scan_impl(db: Session, run: ScanRun) -> ScanRun:
     active_profile = (
         db.query(QualityProfile)
@@ -445,70 +601,47 @@ def _interrogation_scan_impl(db: Session, run: ScanRun) -> ScanRun:
     except ValueError:
         timeout_seconds = 30
 
+    workers_raw = _get_setting(db, "scan.interrogation_workers", "2")
+    interrogation_workers = _parse_interrogation_workers(workers_raw, default=2)
+
     try:
-        targets = (
-            db.query(MediaFileScan)
+        target_ids = [
+            row.id
+            for row in db.query(MediaFileScan.id)
             .filter(MediaFileScan.is_removed.is_(False))
             .order_by(MediaFileScan.id.asc())
             .all()
-        )
+        ]
 
-        run.total_files = len(targets)
+        run.total_files = len(target_ids)
         db.add(run)
         db.commit()
 
-        for media_row in targets:
-            try:
-                file_path = Path(media_row.file_path)
-                if not file_path.exists() or not file_path.is_file():
-                    raise FileNotFoundError(f"File missing during interrogation: {media_row.file_path}")
+        worker_futures = []
+        with ThreadPoolExecutor(max_workers=interrogation_workers) as executor:
+            for result_id in target_ids:
+                worker_futures.append(
+                    executor.submit(
+                        _interrogation_worker,
+                        run.id,
+                        result_id,
+                        timeout_seconds,
+                        active_profile.id,
+                        active_tag_rule.id,
+                    )
+                )
 
-                stat = file_path.stat()
-                probe_data = _probe_media(file_path, timeout_seconds)
-                quality_status = _evaluate_quality(probe_data, active_profile)
-                tag_status, tag_value = _evaluate_tag(probe_data, active_tag_rule)
-
-                now = datetime.now(timezone.utc)
-                is_first_interrogation = media_row.interrogated_at is None
-
-                media_row.file_name = file_path.name
-                media_row.extension = file_path.suffix.lower().lstrip(".")
-                media_row.size_bytes = stat.st_size
-                media_row.modified_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
-                media_row.scan_run_id = run.id
-                media_row.codec = probe_data.get("codec")
-                media_row.pixel_format = probe_data.get("pixel_format")
-                media_row.width = probe_data.get("width")
-                media_row.height = probe_data.get("height")
-                media_row.bitrate_kbps = probe_data.get("bitrate_kbps")
-                media_row.video_profile = probe_data.get("video_profile")
-                media_row.tag_key = active_tag_rule.tag_key
-                media_row.tag_value = tag_value
-                media_row.quality_status = quality_status
-                media_row.tag_status = tag_status
-                media_row.probe_error = probe_data.get("probe_error")
-                media_row.interrogated_at = now
-                media_row.scanned_at = now
-
-                db.add(media_row)
-
+            for worker_future in as_completed(worker_futures):
+                worker_result = worker_future.result()
                 run.processed_files += 1
-                if is_first_interrogation:
-                    run.new_files += 1
+                if worker_result.is_success:
+                    if worker_result.is_new:
+                        run.new_files += 1
+                    else:
+                        run.updated_files += 1
                 else:
-                    run.updated_files += 1
-                db.add(run)
-                db.commit()
-            except Exception as file_error:
-                db.rollback()
-                persisted_run = db.get(ScanRun, run.id)
-                if persisted_run is None:
-                    raise
-                run = persisted_run
-
-                run.processed_files += 1
-                run.error_files += 1
-                run.message = str(file_error)
+                    run.error_files += 1
+                    run.message = worker_result.error_message
                 db.add(run)
                 db.commit()
 
