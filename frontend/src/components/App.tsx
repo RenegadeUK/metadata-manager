@@ -90,6 +90,8 @@ const INITIAL_SCAN_SETTINGS: ScanSettings = {
   'scan.ffprobe_timeout_seconds': '30',
 }
 
+const SUCCESS_MESSAGE_TIMEOUT_MS = 3000
+
 export function App() {
   const restartCommand = 'docker compose restart app'
   const [activePage, setActivePage] = useState<AppPage>('onboarding')
@@ -139,7 +141,7 @@ export function App() {
         }
         return current
       })
-    }, 3000)
+    }, SUCCESS_MESSAGE_TIMEOUT_MS)
 
     return () => window.clearTimeout(timeoutId)
   }, [mappingFeedback])
@@ -151,7 +153,7 @@ export function App() {
 
     const timeoutId = window.setTimeout(() => {
       setOnboardingMessage((current) => (current === onboardingMessage ? null : current))
-    }, 3000)
+    }, SUCCESS_MESSAGE_TIMEOUT_MS)
 
     return () => window.clearTimeout(timeoutId)
   }, [onboardingMessage])
