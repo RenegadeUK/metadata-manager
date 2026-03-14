@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { type MediaFileScanResult, type ScanResultsFilter } from '../../lib/api'
+import { type FolderMapping, type MediaFileScanResult, type ScanResultsFilter } from '../../lib/api'
 
 type ScanResultsPageProps = {
+  mappings: FolderMapping[]
   results: MediaFileScanResult[]
   resultsLoading: boolean
   filters: ScanResultsFilter
@@ -14,6 +15,7 @@ type ScanResultsPageProps = {
 }
 
 export function ScanResultsPage({
+  mappings,
   results,
   resultsLoading,
   filters,
@@ -24,6 +26,10 @@ export function ScanResultsPage({
   onClearSelectedResult,
 }: ScanResultsPageProps) {
   const [localFilters, setLocalFilters] = useState<ScanResultsFilter>(filters)
+
+  useEffect(() => {
+    setLocalFilters(filters)
+  }, [filters])
 
   function submitFilters() {
     onApplyFilters(localFilters)
@@ -39,6 +45,23 @@ export function ScanResultsPage({
       </div>
 
       <div className="results-filters">
+        <select
+          value={localFilters.folderMappingId === undefined ? '' : String(localFilters.folderMappingId)}
+          onChange={(event) => {
+            const value = event.target.value
+            setLocalFilters((current) => ({
+              ...current,
+              folderMappingId: value === '' ? undefined : Number(value),
+            }))
+          }}
+        >
+          <option value="">All mapped folders</option>
+          {mappings.map((mapping) => (
+            <option key={mapping.id} value={mapping.id}>
+              {mapping.name}
+            </option>
+          ))}
+        </select>
         <input
           placeholder="Path contains"
           value={localFilters.pathQuery ?? ''}

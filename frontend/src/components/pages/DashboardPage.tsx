@@ -13,6 +13,7 @@ type DashboardPageProps = {
   scanActionMessage: string | null
   mappings: FolderMapping[]
   folderSummary: FolderScanSummary[]
+  onOpenMappingResults: (mappingId: number) => void
   onRunScanNow: () => void
 }
 
@@ -35,6 +36,7 @@ export function DashboardPage({
   scanActionMessage,
   mappings,
   folderSummary,
+  onOpenMappingResults,
   onRunScanNow,
 }: DashboardPageProps) {
   const folderCounts = new Map(
@@ -108,11 +110,16 @@ export function DashboardPage({
         <div className="dashboard-folder-grid">
           {mappings.length === 0 ? <p className="muted">No mapped folders yet.</p> : null}
           {mappings.map((mapping) => (
-            <article className="dashboard-folder-card" key={mapping.id}>
+            <button
+              className="dashboard-folder-card"
+              key={mapping.id}
+              onClick={() => onOpenMappingResults(mapping.id)}
+              type="button"
+            >
               <p className="mapping-name">{mapping.name}</p>
               <p className="mapping-path">{mapping.source_path}</p>
               <p className="dashboard-folder-count">{folderCounts.get(mapping.id) ?? 0} files</p>
-            </article>
+            </button>
           ))}
         </div>
       </div>

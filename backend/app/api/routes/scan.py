@@ -104,6 +104,7 @@ def list_scan_runs(
 @router.get("/results", response_model=list[MediaFileScanRead])
 def list_scan_results(
     path_query: str | None = Query(default=None),
+    folder_mapping_id: int | None = Query(default=None),
     extension: str | None = Query(default=None),
     quality_status: str | None = Query(default=None),
     tag_status: str | None = Query(default=None),
@@ -116,6 +117,8 @@ def list_scan_results(
 
     if path_query:
         query = query.filter(MediaFileScan.file_path.ilike(f"%{path_query}%"))
+    if folder_mapping_id is not None:
+        query = query.filter(MediaFileScan.folder_mapping_id == folder_mapping_id)
     if extension:
         query = query.filter(MediaFileScan.extension == extension.lower().lstrip("."))
     if quality_status:

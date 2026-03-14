@@ -127,6 +127,7 @@ export type MediaFileScanResult = {
 
 export type ScanResultsFilter = {
   pathQuery?: string
+  folderMappingId?: number
   extension?: string
   qualityStatus?: string
   tagStatus?: string
@@ -368,6 +369,9 @@ export async function fetchScanResults(
 ): Promise<MediaFileScanResult[]> {
   const params = new URLSearchParams()
   if (filters.pathQuery) params.set('path_query', filters.pathQuery)
+  if (filters.folderMappingId !== undefined) {
+    params.set('folder_mapping_id', String(filters.folderMappingId))
+  }
   if (filters.extension) params.set('extension', filters.extension)
   if (filters.qualityStatus) params.set('quality_status', filters.qualityStatus)
   if (filters.tagStatus) params.set('tag_status', filters.tagStatus)

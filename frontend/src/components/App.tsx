@@ -108,6 +108,21 @@ export function App() {
     handleOpenResultDetail,
   } = useScanData({ setError })
 
+  function handleOpenMappingResults(mappingId: number) {
+    void handleApplyResultsFilters({
+      folderMappingId: mappingId,
+      pathQuery: '',
+      extension: '',
+      qualityStatus: '',
+      tagStatus: '',
+      removed: undefined,
+      limit: 200,
+      offset: 0,
+    })
+    setSelectedResult(null)
+    setActivePage('scan-results')
+  }
+
   function renderPage() {
     if (activePage === 'dashboard') {
       const latestRun = scanRuns[0]
@@ -125,6 +140,7 @@ export function App() {
           scanActionMessage={scanActionMessage}
           scanRunsCount={scanRuns.length}
           tagRulesCount={tagRules.length}
+          onOpenMappingResults={handleOpenMappingResults}
           onRunScanNow={() => void handleRunInventoryNow()}
         />
       )
@@ -209,6 +225,7 @@ export function App() {
     return (
       <ScanResultsPage
         filters={resultsFilters}
+        mappings={mappings}
         results={results}
         resultsLoading={resultsLoading}
         selectedResult={selectedResult}
