@@ -28,9 +28,14 @@ import {
   type QualityProfilePayload,
   type ScanSettings,
 } from '../lib/api'
+import { PageHeader } from './layout/PageHeader'
+import { SidebarNav } from './layout/SidebarNav'
+import { ItemsPage } from './pages/ItemsPage'
+import { OnboardingPage } from './pages/OnboardingPage'
+import { RuntimeSettingsPage } from './pages/RuntimeSettingsPage'
+import { SeedDataPage } from './pages/SeedDataPage'
+import { type AppPage, type MappingFeedback } from './types'
 import '../styles/app.css'
-
-type AppPage = 'onboarding' | 'runtime' | 'seed' | 'items'
 
 const PAGE_LABELS: Record<AppPage, string> = {
   onboarding: 'Onboarding',
@@ -91,6 +96,7 @@ const INITIAL_SCAN_SETTINGS: ScanSettings = {
 }
 
 const SUCCESS_MESSAGE_TIMEOUT_MS = 3000
+const APP_PAGES: AppPage[] = ['onboarding', 'runtime', 'seed', 'items']
 
 export function App() {
   const restartCommand = 'docker compose restart app'
@@ -118,11 +124,7 @@ export function App() {
   const [onboardingSaving, setOnboardingSaving] = useState(false)
   const [editingMappingId, setEditingMappingId] = useState<number | null>(null)
   const [editingMappingForm, setEditingMappingForm] = useState<FolderMappingPayload | null>(null)
-  const [mappingFeedback, setMappingFeedback] = useState<{
-    mappingId: number
-    kind: 'success' | 'error'
-    message: string
-  } | null>(null)
+  const [mappingFeedback, setMappingFeedback] = useState<MappingFeedback | null>(null)
 
   useEffect(() => {
     if (!mappingFeedback || mappingFeedback.kind !== 'success') {
@@ -454,502 +456,87 @@ export function App() {
   function renderPage() {
     if (activePage === 'onboarding') {
       return (
-        <section className="panel onboarding-panel">
-          <div className="list-header">
-            <h2>Onboarding</h2>
-            <button onClick={() => void loadOnboardingState()} type="button">
-              Reload
-            </button>
-          </div>
-          <p className="muted">
-            Operational config is UI-driven and persisted. Scans should remain blocked until onboarding is
-            ready.
-          </p>
-          {onboardingStatus ? (
-            <p className={onboardingStatus.ready ? 'success' : 'error'}>
-              {onboardingStatus.ready
-                ? 'Onboarding ready.'
-                : `Missing: ${onboardingStatus.missing_requirements.join(', ')}`}
-            </p>
-          ) : null}
-
-          <form className="composer" onSubmit={handleCreateMapping}>
-            <h3>Folder mapping</h3>
-            <label>
-              Name
-              <input
-                value={mappingForm.name}
-                onChange={(event) =>
-                  setMappingForm((current) => ({ ...current, name: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Source path
-              <input
-                value={mappingForm.source_path}
-                onChange={(event) =>
-                  setMappingForm((current) => ({ ...current, source_path: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Notes
-              <input
-                value={mappingForm.notes ?? ''}
-                onChange={(event) =>
-                  setMappingForm((current) => ({ ...current, notes: event.target.value || null }))
-                }
-              />
-            </label>
-            <label className="toggle-row">
-              <input
-                checked={mappingForm.recursive}
-                onChange={(event) =>
-                  setMappingForm((current) => ({ ...current, recursive: event.target.checked }))
-                }
-                type="checkbox"
-              />
-              Recursive
-            </label>
-            <label className="toggle-row">
-              <input
-                checked={mappingForm.is_active}
-                onChange={(event) =>
-                  setMappingForm((current) => ({ ...current, is_active: event.target.checked }))
-                }
-                type="checkbox"
-              />
-              Active
-            </label>
-            <button disabled={onboardingSaving} type="submit">Save mapping</button>
-            <p className="muted">Configured mappings: {mappings.length}</p>
-          </form>
-
-          <div className="mapping-list">
-            <div className="list-header">
-              <h3>Mapped folders</h3>
-            </div>
-            {mappings.length === 0 ? <p className="muted">No folder mappings yet.</p> : null}
-            {mappings.map((mapping) => (
-              <article className="mapping-card" key={mapping.id}>
-                {editingMappingId === mapping.id && editingMappingForm ? (
-                  <form
-                    className="composer mapping-edit-form"
-                    onSubmit={(event) => void handleSaveMappingEdit(event, mapping.id)}
-                  >
-                    <label>
-                      Name
-                      <input
-                        value={editingMappingForm.name}
-                        onChange={(event) =>
-                          setEditingMappingForm((current) =>
-                            current ? { ...current, name: event.target.value } : current,
-                          )
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      Source path
-                      <input
-                        value={editingMappingForm.source_path}
-                        onChange={(event) =>
-                          setEditingMappingForm((current) =>
-                            current ? { ...current, source_path: event.target.value } : current,
-                          )
-                        }
-                        required
-                      />
-                    </label>
-                    <label>
-                      Notes
-                      <input
-                        value={editingMappingForm.notes ?? ''}
-                        onChange={(event) =>
-                          setEditingMappingForm((current) =>
-                            current ? { ...current, notes: event.target.value || null } : current,
-                          )
-                        }
-                      />
-                    </label>
-                    <label className="toggle-row">
-                      <input
-                        checked={editingMappingForm.recursive}
-                        onChange={(event) =>
-                          setEditingMappingForm((current) =>
-                            current ? { ...current, recursive: event.target.checked } : current,
-                          )
-                        }
-                        type="checkbox"
-                      />
-                      Recursive
-                    </label>
-                    <label className="toggle-row">
-                      <input
-                        checked={editingMappingForm.is_active}
-                        onChange={(event) =>
-                          setEditingMappingForm((current) =>
-                            current ? { ...current, is_active: event.target.checked } : current,
-                          )
-                        }
-                        type="checkbox"
-                      />
-                      Active
-                    </label>
-                    <div className="mapping-actions">
-                      <button disabled={onboardingSaving} type="submit">Save changes</button>
-                      <button
-                        className="secondary-button"
-                        disabled={onboardingSaving}
-                        onClick={handleCancelMappingEdit}
-                        type="button"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    {mappingFeedback?.mappingId === mapping.id ? (
-                      <p className={mappingFeedback.kind === 'success' ? 'success' : 'error'}>
-                        {mappingFeedback.message}
-                      </p>
-                    ) : null}
-                  </form>
-                ) : (
-                  <>
-                    <div className="mapping-details">
-                      <p className="mapping-name">{mapping.name}</p>
-                      <p className="mapping-path">{mapping.source_path}</p>
-                      <p className="muted">
-                        {mapping.recursive ? 'Recursive' : 'Non-recursive'} ·{' '}
-                        {mapping.is_active ? 'Active' : 'Inactive'}
-                      </p>
-                      {mapping.notes ? <p className="muted">{mapping.notes}</p> : null}
-                    </div>
-                    <div className="mapping-actions">
-                      <button
-                        className="secondary-button"
-                        disabled={onboardingSaving}
-                        onClick={() => handleStartMappingEdit(mapping)}
-                        type="button"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="secondary-button"
-                        disabled={onboardingSaving}
-                        onClick={() => void handleToggleMappingActive(mapping)}
-                        type="button"
-                      >
-                        {mapping.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        className="danger-button"
-                        disabled={onboardingSaving}
-                        onClick={() => void handleDeleteMapping(mapping.id)}
-                        type="button"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    {mappingFeedback?.mappingId === mapping.id ? (
-                      <p className={mappingFeedback.kind === 'success' ? 'success' : 'error'}>
-                        {mappingFeedback.message}
-                      </p>
-                    ) : null}
-                  </>
-                )}
-              </article>
-            ))}
-          </div>
-
-          <form className="composer" onSubmit={handleCreateProfile}>
-            <h3>Quality profile</h3>
-            <label>
-              Name
-              <input
-                value={profileForm.name}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, name: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Codec
-              <input
-                value={profileForm.codec}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, codec: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Pixel format
-              <input
-                value={profileForm.pixel_format ?? ''}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, pixel_format: event.target.value || null }))
-                }
-              />
-            </label>
-            <button disabled={onboardingSaving} type="submit">Save profile</button>
-            <p className="muted">Configured profiles: {profiles.length}</p>
-          </form>
-
-          <form className="composer" onSubmit={handleCreateTagRule}>
-            <h3>Metadata tag rule</h3>
-            <label>
-              Name
-              <input
-                value={tagRuleForm.name}
-                onChange={(event) =>
-                  setTagRuleForm((current) => ({ ...current, name: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Tag key
-              <input
-                value={tagRuleForm.tag_key}
-                onChange={(event) =>
-                  setTagRuleForm((current) => ({ ...current, tag_key: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Tag value
-              <input
-                value={tagRuleForm.tag_value}
-                onChange={(event) =>
-                  setTagRuleForm((current) => ({ ...current, tag_value: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <button disabled={onboardingSaving} type="submit">Save tag rule</button>
-            <p className="muted">Configured tag rules: {tagRules.length}</p>
-          </form>
-
-          <form className="composer" onSubmit={handleSaveScanSettings}>
-            <h3>Scan settings</h3>
-            <label>
-              Include extensions
-              <input
-                value={scanSettingsForm['scan.include_extensions']}
-                onChange={(event) =>
-                  setScanSettingsForm((current) => ({
-                    ...current,
-                    'scan.include_extensions': event.target.value,
-                  }))
-                }
-                required
-              />
-            </label>
-            <label>
-              Exclude patterns
-              <input
-                value={scanSettingsForm['scan.exclude_patterns']}
-                onChange={(event) =>
-                  setScanSettingsForm((current) => ({
-                    ...current,
-                    'scan.exclude_patterns': event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              ffprobe timeout seconds
-              <input
-                value={scanSettingsForm['scan.ffprobe_timeout_seconds']}
-                onChange={(event) =>
-                  setScanSettingsForm((current) => ({
-                    ...current,
-                    'scan.ffprobe_timeout_seconds': event.target.value,
-                  }))
-                }
-                required
-              />
-            </label>
-            <button disabled={onboardingSaving} type="submit">Save scan settings</button>
-            {onboardingMessage ? <p className="success">{onboardingMessage}</p> : null}
-          </form>
-        </section>
+        <OnboardingPage
+          editingMappingForm={editingMappingForm}
+          editingMappingId={editingMappingId}
+          mappingFeedback={mappingFeedback}
+          mappingForm={mappingForm}
+          mappings={mappings}
+          onboardingMessage={onboardingMessage}
+          onboardingSaving={onboardingSaving}
+          onboardingStatus={onboardingStatus}
+          onCancelMappingEdit={handleCancelMappingEdit}
+          onCreateMapping={handleCreateMapping}
+          onCreateProfile={handleCreateProfile}
+          onCreateTagRule={handleCreateTagRule}
+          onDeleteMapping={(mappingId) => void handleDeleteMapping(mappingId)}
+          onReload={() => void loadOnboardingState()}
+          onSaveMappingEdit={(event, mappingId) => void handleSaveMappingEdit(event, mappingId)}
+          onSaveScanSettings={handleSaveScanSettings}
+          onStartMappingEdit={handleStartMappingEdit}
+          onToggleMappingActive={(mapping) => void handleToggleMappingActive(mapping)}
+          profileForm={profileForm}
+          profilesCount={profiles.length}
+          scanSettingsForm={scanSettingsForm}
+          setEditingMappingForm={setEditingMappingForm}
+          setMappingForm={setMappingForm}
+          setProfileForm={setProfileForm}
+          setScanSettingsForm={setScanSettingsForm}
+          setTagRuleForm={setTagRuleForm}
+          tagRuleForm={tagRuleForm}
+          tagRulesCount={tagRules.length}
+        />
       )
     }
 
     if (activePage === 'runtime') {
       return (
-        <form className="panel composer settings-panel" onSubmit={handleSettingsSubmit}>
-          <div className="list-header">
-            <h2>Runtime settings</h2>
-            <button onClick={() => void loadSettings()} type="button">
-              Reload
-            </button>
-          </div>
-          <p className="muted">
-            These values are persisted to <strong>/config/.env</strong>. Restart the container after
-            saving.
-          </p>
-          <label>
-            App name
-            <input
-              value={settings.APP_NAME}
-              onChange={handleInputChange('APP_NAME')}
-              required
-            />
-          </label>
-          <label>
-            App environment
-            <select
-              value={settings.APP_ENV}
-              onChange={handleInputChange('APP_ENV')}
-            >
-              <option value="development">development</option>
-              <option value="production">production</option>
-            </select>
-          </label>
-          <label>
-            Log level
-            <select
-              value={settings.APP_LOG_LEVEL}
-              onChange={handleInputChange('APP_LOG_LEVEL')}
-            >
-              <option value="DEBUG">DEBUG</option>
-              <option value="INFO">INFO</option>
-              <option value="WARNING">WARNING</option>
-              <option value="ERROR">ERROR</option>
-            </select>
-          </label>
-          <label>
-            CORS origins
-            <input
-              value={settings.CORS_ORIGINS}
-              onChange={handleInputChange('CORS_ORIGINS')}
-              required
-            />
-          </label>
-          <label>
-            Postgres database
-            <input
-              value={settings.POSTGRES_DB}
-              onChange={handleInputChange('POSTGRES_DB')}
-              required
-            />
-          </label>
-          <label>
-            Postgres user
-            <input
-              value={settings.POSTGRES_USER}
-              onChange={handleInputChange('POSTGRES_USER')}
-              required
-            />
-          </label>
-          <label>
-            Postgres password
-            <input
-              type="password"
-              value={settings.POSTGRES_PASSWORD}
-              onChange={handleInputChange('POSTGRES_PASSWORD')}
-              required
-            />
-          </label>
-          <button disabled={settingsSaving || settingsLoading} type="submit">
-            {settingsSaving ? 'Saving...' : 'Save settings'}
-          </button>
-          {settingsLoading ? <p>Loading settings...</p> : null}
-          {settingsMessage ? <p className="success">{settingsMessage}</p> : null}
-          {settingsMessage ? (
-            <div className="restart-banner">
-              <div>
-                <p className="restart-title">Restart required</p>
-                <p className="muted">Run this after saving so the container reloads the managed settings.</p>
-                <code>{restartCommand}</code>
-              </div>
-              <button onClick={() => void handleCopyRestartCommand()} type="button">
-                Copy restart command
-              </button>
-              {restartCommandMessage ? <p className="success">{restartCommandMessage}</p> : null}
-            </div>
-          ) : null}
-        </form>
+        <RuntimeSettingsPage
+          onCopyRestartCommand={() => void handleCopyRestartCommand()}
+          onInputChange={handleInputChange}
+          onReload={() => void loadSettings()}
+          onSubmit={handleSettingsSubmit}
+          restartCommand={restartCommand}
+          restartCommandMessage={restartCommandMessage}
+          settings={settings}
+          settingsLoading={settingsLoading}
+          settingsMessage={settingsMessage}
+          settingsSaving={settingsSaving}
+        />
       )
     }
 
     if (activePage === 'seed') {
       return (
-        <form className="panel composer" onSubmit={handleSubmit}>
-          <h2>Create seed record</h2>
-          <label>
-            Name
-            <input value={name} onChange={(event) => setName(event.target.value)} required />
-          </label>
-          <label>
-            Description
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={4}
-            />
-          </label>
-          <button disabled={saving} type="submit">
-            {saving ? 'Saving...' : 'Create item'}
-          </button>
-        </form>
+        <SeedDataPage
+          description={description}
+          name={name}
+          onSetDescription={setDescription}
+          onSetName={setName}
+          onSubmit={handleSubmit}
+          saving={saving}
+        />
       )
     }
 
-    return (
-      <section className="panel list-panel">
-        <div className="list-header">
-          <h2>Stored items</h2>
-          <button onClick={() => void loadItems()} type="button">
-            Refresh
-          </button>
-        </div>
-        {loading ? <p>Loading items...</p> : null}
-        {!loading && items.length === 0 ? <p>No items yet.</p> : null}
-        <ul className="item-list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <strong>{item.name}</strong>
-              <p>{item.description ?? 'No description'}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-    )
+    return <ItemsPage items={items} loading={loading} onRefresh={() => void loadItems()} />
   }
 
   return (
     <main className="app-shell">
-      <aside className="sidebar panel">
-        <p className="eyebrow">Metadata Manager</p>
-        <h1 className="sidebar-title">Navigation</h1>
-        <nav className="sidebar-nav" aria-label="Primary">
-          {(Object.keys(PAGE_LABELS) as AppPage[]).map((page) => (
-            <button
-              className={activePage === page ? 'nav-link nav-link-active' : 'nav-link'}
-              key={page}
-              onClick={() => setActivePage(page)}
-              type="button"
-            >
-              {PAGE_LABELS[page]}
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <SidebarNav
+        activePage={activePage}
+        labels={PAGE_LABELS}
+        onSelectPage={setActivePage}
+        pages={APP_PAGES}
+      />
 
       <section className="content-area">
-        <header className="page-header panel">
-          <h2>{PAGE_LABELS[activePage]}</h2>
-          <p className="muted">{PAGE_DESCRIPTIONS[activePage]}</p>
-          {error ? <p className="error">{error}</p> : null}
-        </header>
+        <PageHeader
+          description={PAGE_DESCRIPTIONS[activePage]}
+          error={error}
+          title={PAGE_LABELS[activePage]}
+        />
         {renderPage()}
       </section>
     </main>
