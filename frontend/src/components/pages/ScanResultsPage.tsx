@@ -31,6 +31,36 @@ export function ScanResultsPage({
 }: ScanResultsPageProps) {
   const [localFilters, setLocalFilters] = useState<ScanResultsFilter>(filters)
 
+  function getQualityBadge(result: MediaFileScanResult) {
+    if (result.quality_status === 'meets_profile') {
+      return { label: 'Quality: Meets', className: 'status-badge status-badge-quality-meets' }
+    }
+    if (result.quality_status === 'below_profile') {
+      return { label: 'Quality: Below', className: 'status-badge status-badge-quality-below' }
+    }
+    return { label: 'Quality: Unknown', className: 'status-badge status-badge-quality-unknown' }
+  }
+
+  function getTagBadge(result: MediaFileScanResult) {
+    if (result.tag_status === 'tag_match') {
+      return { label: 'Tag: Match', className: 'status-badge status-badge-tag-match' }
+    }
+    if (result.tag_status === 'tag_mismatch') {
+      return { label: 'Tag: Mismatch', className: 'status-badge status-badge-tag-mismatch' }
+    }
+    if (result.tag_status === 'missing_tag') {
+      return { label: 'Tag: Missing', className: 'status-badge status-badge-tag-missing' }
+    }
+    return { label: 'Tag: Unknown', className: 'status-badge status-badge-tag-unknown' }
+  }
+
+  function getRemovalBadge(result: MediaFileScanResult) {
+    if (result.is_removed) {
+      return { label: 'Removed', className: 'status-badge status-badge-removed' }
+    }
+    return { label: 'Active', className: 'status-badge status-badge-active' }
+  }
+
   useEffect(() => {
     setLocalFilters(filters)
   }, [filters])
@@ -130,28 +160,36 @@ export function ScanResultsPage({
       {!resultsLoading && results.length === 0 ? <p>No scan results found.</p> : null}
 
       <ul className="item-list">
-        {results.map((result) => (
-          <li key={result.id}>
-            <div className="list-header">
-              <strong>{result.file_name}</strong>
-              <div className="scan-result-actions">
-                <button className="secondary-button" onClick={() => onSelectResult(result.id)} type="button">
-                  View details
-                </button>
-                <button disabled={scanActionLoading} onClick={() => onInterrogateResult(result.id)} type="button">
-                  {scanActionLoading ? 'Running...' : 'Interrogate file'}
-                </button>
+        {results.map((result) => {
+          const qualityBadge = getQualityBadge(result)
+          const tagBadge = getTagBadge(result)
+          const removalBadge = getRemovalBadge(result)
+
+          return (
+            <li key={result.id}>
+              <div className="result-badges">
+                <span className={qualityBadge.className}>{qualityBadge.label}</span>
+                <span className={tagBadge.className}>{tagBadge.label}</span>
+                <span className={removalBadge.className}>{removalBadge.label}</span>
               </div>
-            </div>
-            <p>{result.file_path}</p>
-            <p>
-              {result.extension} · {result.codec ?? 'n/a'} · {result.width ?? '?'}x{result.height ?? '?'} · {result.bitrate_kbps ?? '?'} kbps
-            </p>
-            <p>
-              quality: {result.quality_status} · tag: {result.tag_status} · removed: {String(result.is_removed)}
-            </p>
-          </li>
-        ))}
+              <div className="list-header">
+                <strong>{result.file_name}</strong>
+                <div className="scan-result-actions">
+                  <button className="secondary-button" onClick={() => onSelectResult(result.id)} type="button">
+                    View details
+                  </button>
+                  <button disabled={scanActionLoading} onClick={() => onInterrogateResult(result.id)} type="button">
+                    {scanActionLoading ? 'Running...' : 'Interrogate file'}
+                  </button>
+                </div>
+              </div>
+              <p>{result.file_path}</p>
+              <p>
+                {result.extension} · {result.codec ?? 'n/a'} · {result.width ?? '?'}x{result.height ?? '?'} · {result.bitrate_kbps ?? '?'} kbps
+              </p>
+            </li>
+          )
+        })}
       </ul>
 
       {selectedResult ? (
