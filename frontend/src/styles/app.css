@@ -502,6 +502,12 @@ button {
   align-items: end;
 }
 
+.results-filter-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .results-table-wrap {
   overflow: auto;
   border: 1px solid rgba(255, 255, 255, 0.1);

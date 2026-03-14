@@ -207,6 +207,22 @@ export function ScanResultsPage({
     })
   }
 
+  function clearFilters() {
+    const nextFilters: ScanResultsFilter = {
+      pathQuery: '',
+      folderMappingId: undefined,
+      extension: '',
+      codec: '',
+      pixelFormat: '',
+      tagStatus: '',
+      removed: undefined,
+      limit: pageSize,
+      offset: 0,
+    }
+    setLocalFilters(nextFilters)
+    onApplyFilters(nextFilters)
+  }
+
   function applyFolderFilter(folderMappingId: number | undefined) {
     const nextFilters = {
       ...localFilters,
@@ -380,7 +396,12 @@ export function ScanResultsPage({
           <option value="false">active</option>
           <option value="true">soft removed</option>
         </select>
-        <button onClick={submitFilters} type="button">Apply filters</button>
+        <div className="results-filter-actions">
+          <button onClick={submitFilters} type="button">Apply filters</button>
+          <button className="secondary-button" onClick={clearFilters} type="button">
+            Clear filters
+          </button>
+        </div>
       </div>
 
       {resultsLoading ? <p>Loading scan results...</p> : null}
