@@ -75,6 +75,13 @@ class ScanFilterOptionsRead(BaseModel):
     pixel_formats: list[str]
 
 
+class ScanResultsPageRead(BaseModel):
+    items: list[MediaFileScanRead]
+    total_count: int
+    limit: int
+    offset: int
+
+
 @router.post("/run", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
 def start_scan(db: Session = Depends(get_db)) -> ScanRun:
     try:
@@ -110,7 +117,7 @@ def list_scan_runs(
     return query.order_by(ScanRun.id.desc()).limit(100).all()
 
 
-@router.get("/results", response_model=list[MediaFileScanRead])
+@router.get("/results", response_model=ScanResultsPageRead)
 def list_scan_results(
     path_query: str | None = Query(default=None),
     folder_mapping_id: int | None = Query(default=None),
@@ -122,7 +129,7 @@ def list_scan_results(
     limit: int = Query(default=200, ge=1, le=2000),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
-) -> list[MediaFileScan]:
+) -> ScanResultsPageRead:
     query = db.query(MediaFileScan).order_by(MediaFileScan.scanned_at.desc())
 
     if path_query:
@@ -140,7 +147,15 @@ def list_scan_results(
     if removed is not None:
         query = query.filter(MediaFileScan.is_removed.is_(removed))
 
-    return query.offset(offset).limit(limit).all()
+    total_count = query.count()
+    items = query.offset(offset).limit(limit).all()
+
+    return ScanResultsPageRead(
+        items=items,
+        total_count=total_count,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/folder-summary", response_model=list[FolderScanSummaryRead])

@@ -97,6 +97,7 @@ export function App() {
     folderSummary,
     filterOptions,
     results,
+    resultsTotalCount,
     resultsLoading,
     resultsFilters,
     selectedResult,
@@ -249,6 +250,7 @@ export function App() {
         folderSummary={folderSummary}
         mappings={mappings}
         results={results}
+        resultsTotalCount={resultsTotalCount}
         resultsLoading={resultsLoading}
         scanActionLoading={scanActionLoading}
         selectedResult={selectedResult}

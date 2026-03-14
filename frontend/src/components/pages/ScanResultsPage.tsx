@@ -16,6 +16,7 @@ type ScanResultsPageProps = {
   filterOptions: ScanFilterOptions
   activeQualityProfile?: QualityProfile
   results: MediaFileScanResult[]
+  resultsTotalCount: number
   resultsLoading: boolean
   filters: ScanResultsFilter
   selectedResult: MediaFileScanResult | null
@@ -35,6 +36,7 @@ export function ScanResultsPage({
   filterOptions,
   activeQualityProfile,
   results,
+  resultsTotalCount,
   resultsLoading,
   filters,
   selectedResult,
@@ -48,6 +50,9 @@ export function ScanResultsPage({
   onClearSelectedResult,
 }: ScanResultsPageProps) {
   const [localFilters, setLocalFilters] = useState<ScanResultsFilter>(filters)
+  const pageSize = filters.limit ?? 500
+  const currentPage = Math.floor((filters.offset ?? 0) / pageSize) + 1
+  const totalPages = Math.max(1, Math.ceil(resultsTotalCount / pageSize))
 
   const folderCountMap = new Map(
     folderSummary
@@ -195,16 +200,40 @@ export function ScanResultsPage({
   }, [filters])
 
   function submitFilters() {
-    onApplyFilters(localFilters)
+    onApplyFilters({
+      ...localFilters,
+      limit: pageSize,
+      offset: 0,
+    })
   }
 
   function applyFolderFilter(folderMappingId: number | undefined) {
     const nextFilters = {
       ...localFilters,
       folderMappingId,
+      limit: pageSize,
+      offset: 0,
     }
     setLocalFilters(nextFilters)
     onApplyFilters(nextFilters)
+  }
+
+  function changePage(page: number) {
+    const safePage = Math.max(1, Math.min(totalPages, page))
+    const nextFilters = {
+      ...localFilters,
+      limit: pageSize,
+      offset: (safePage - 1) * pageSize,
+    }
+    setLocalFilters(nextFilters)
+    onApplyFilters(nextFilters)
+  }
+
+  function getVisiblePages() {
+    const pages = new Set<number>([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
+    return [...pages]
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((left, right) => left - right)
   }
 
   return (
@@ -356,6 +385,12 @@ export function ScanResultsPage({
 
       {resultsLoading ? <p>Loading scan results...</p> : null}
       {!resultsLoading && results.length === 0 ? <p>No scan results found.</p> : null}
+      {!resultsLoading ? (
+        <div className="results-pagination-summary">
+          Showing {results.length === 0 ? 0 : (filters.offset ?? 0) + 1}-
+          {(filters.offset ?? 0) + results.length} of {resultsTotalCount}
+        </div>
+      ) : null}
 
       {results.length > 0 ? (
         <div className="results-table-wrap">
@@ -456,6 +491,37 @@ export function ScanResultsPage({
               })}
             </tbody>
           </table>
+        </div>
+      ) : null}
+
+      {!resultsLoading && totalPages > 1 ? (
+        <div className="results-pagination">
+          <button
+            className="secondary-button"
+            disabled={currentPage === 1}
+            onClick={() => changePage(currentPage - 1)}
+            type="button"
+          >
+            Previous
+          </button>
+          {getVisiblePages().map((page) => (
+            <button
+              className={page === currentPage ? 'results-page-button results-page-button-active' : 'results-page-button'}
+              key={page}
+              onClick={() => changePage(page)}
+              type="button"
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            className="secondary-button"
+            disabled={currentPage === totalPages}
+            onClick={() => changePage(currentPage + 1)}
+            type="button"
+          >
+            Next
+          </button>
         </div>
       ) : null}
     </section>

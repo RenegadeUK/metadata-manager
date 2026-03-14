@@ -585,6 +585,32 @@ button {
   border-color: transparent;
 }
 
+.results-pagination-summary {
+  color: #c0c8cd;
+}
+
+.results-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.results-page-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4efe5;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.results-page-button-active {
+  background: linear-gradient(135deg, #f48148, #f7bf73);
+  color: #081018;
+  border-color: transparent;
+}
+
 .result-detail {
   margin-top: 8px;
 }

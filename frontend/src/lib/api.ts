@@ -152,6 +152,13 @@ export type ScanFilterOptions = {
   pixel_formats: string[]
 }
 
+export type ScanResultsResponse = {
+  items: MediaFileScanResult[]
+  total_count: number
+  limit: number
+  offset: number
+}
+
 type SettingsResponse = {
   values: AppSettings
   restart_required: boolean
@@ -377,7 +384,7 @@ export async function fetchScanRuns(): Promise<ScanRun[]> {
 
 export async function fetchScanResults(
   filters: ScanResultsFilter = {},
-): Promise<MediaFileScanResult[]> {
+): Promise<ScanResultsResponse> {
   const params = new URLSearchParams()
   if (filters.pathQuery) params.set('path_query', filters.pathQuery)
   if (filters.folderMappingId !== undefined) {
@@ -388,7 +395,7 @@ export async function fetchScanResults(
   if (filters.pixelFormat) params.set('pixel_format', filters.pixelFormat)
   if (filters.tagStatus) params.set('tag_status', filters.tagStatus)
   if (filters.removed !== undefined) params.set('removed', String(filters.removed))
-  params.set('limit', String(filters.limit ?? 200))
+  params.set('limit', String(filters.limit ?? 500))
   params.set('offset', String(filters.offset ?? 0))
 
   const query = params.toString()

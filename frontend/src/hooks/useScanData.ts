@@ -31,7 +31,7 @@ const INITIAL_FILTERS: ScanResultsFilter = {
   pixelFormat: '',
   tagStatus: '',
   removed: undefined,
-  limit: 200,
+  limit: 500,
   offset: 0,
 }
 
@@ -42,6 +42,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
   const [scanActionMessage, setScanActionMessage] = useState<string | null>(null)
 
   const [results, setResults] = useState<MediaFileScanResult[]>([])
+  const [resultsTotalCount, setResultsTotalCount] = useState(0)
   const [resultsLoading, setResultsLoading] = useState(true)
   const [folderSummary, setFolderSummary] = useState<FolderScanSummary[]>([])
   const [filterOptions, setFilterOptions] = useState<ScanFilterOptions>({
@@ -82,8 +83,9 @@ export function useScanData({ setError }: UseScanDataArgs) {
       setResultsLoading(true)
     }
     try {
-      const rows = await fetchScanResults(filters)
-      setResults(rows)
+      const response = await fetchScanResults(filters)
+      setResults(response.items)
+      setResultsTotalCount(response.total_count)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unexpected error')
     } finally {
@@ -213,6 +215,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
     activeInventoryRun,
     activeInterrogationRun,
     results,
+    resultsTotalCount,
     resultsLoading,
     folderSummary,
     filterOptions,
