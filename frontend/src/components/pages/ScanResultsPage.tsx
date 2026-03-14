@@ -51,6 +51,7 @@ export function ScanResultsPage({
       .filter((summary) => summary.folder_mapping_id !== null)
       .map((summary) => [summary.folder_mapping_id as number, summary.file_count]),
   )
+  const mappingNameById = new Map(mappings.map((mapping) => [mapping.id, mapping.name]))
 
   const selectedResultDisplay = selectedResult
     ? (() => {
@@ -292,41 +293,78 @@ export function ScanResultsPage({
       {resultsLoading ? <p>Loading scan results...</p> : null}
       {!resultsLoading && results.length === 0 ? <p>No scan results found.</p> : null}
 
-      <ul className="item-list">
-        {results.map((result) => {
-          const tagBadge = getTagBadge(result)
-          const removalBadge = getRemovalBadge(result)
-          const codecBadge = getCodecBadge(result)
-          const pixelFormatBadge = getPixelFormatBadge(result)
+      {results.length > 0 ? (
+        <div className="results-table-wrap">
+          <table className="results-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Folder</th>
+                <th>Codec</th>
+                <th>Pixel format</th>
+                <th>Resolution</th>
+                <th>Bitrate</th>
+                <th>Tag</th>
+                <th>State</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((result) => {
+                const tagBadge = getTagBadge(result)
+                const removalBadge = getRemovalBadge(result)
+                const codecBadge = getCodecBadge(result)
+                const pixelFormatBadge = getPixelFormatBadge(result)
 
-          return (
-            <li key={result.id}>
-              <div className="result-badges">
-                <span className={tagBadge.className}>{tagBadge.label}</span>
-                <span className={codecBadge.className}>{codecBadge.label}</span>
-                <span className={pixelFormatBadge.className}>{pixelFormatBadge.label}</span>
-                <span className={removalBadge.className}>{removalBadge.label}</span>
-              </div>
-              <div className="list-header">
-                <strong>{result.file_name}</strong>
-                <div className="scan-result-actions">
-                  <button className="secondary-button" onClick={() => onSelectResult(result.id)} type="button">
-                    View details
-                  </button>
-                  <button disabled={scanActionLoading} onClick={() => onInterrogateResult(result.id)} type="button">
-                    {scanActionLoading ? 'Running...' : 'Interrogate file'}
-                  </button>
-                </div>
-              </div>
-              <p>{result.file_path}</p>
-              <p>
-                {result.extension} · {result.codec ?? 'n/a'} · {result.pixel_format ?? 'n/a'} · {result.width ?? '?'}x{result.height ?? '?'} · {formatBitrateMBps(result.bitrate_kbps)}
-              </p>
-              {result.probe_error ? <p className="error">Probe error: {result.probe_error}</p> : null}
-            </li>
-          )
-        })}
-      </ul>
+                return (
+                  <tr key={result.id}>
+                    <td>
+                      <p className="results-file-name">{result.file_name}</p>
+                      <p className="results-file-path">{result.file_path}</p>
+                      {result.probe_error ? (
+                        <p className="error results-probe-error">Probe error: {result.probe_error}</p>
+                      ) : null}
+                    </td>
+                    <td>{mappingNameById.get(result.folder_mapping_id ?? -1) ?? 'Unmapped'}</td>
+                    <td>
+                      <span className={codecBadge.className}>{codecBadge.label}</span>
+                    </td>
+                    <td>
+                      <span className={pixelFormatBadge.className}>{pixelFormatBadge.label}</span>
+                    </td>
+                    <td>{result.width ?? '?'}x{result.height ?? '?'}</td>
+                    <td>{formatBitrateMBps(result.bitrate_kbps)}</td>
+                    <td>
+                      <span className={tagBadge.className}>{tagBadge.label}</span>
+                    </td>
+                    <td>
+                      <span className={removalBadge.className}>{removalBadge.label}</span>
+                    </td>
+                    <td>
+                      <div className="scan-result-actions">
+                        <button
+                          className="secondary-button"
+                          onClick={() => onSelectResult(result.id)}
+                          type="button"
+                        >
+                          View details
+                        </button>
+                        <button
+                          disabled={scanActionLoading}
+                          onClick={() => onInterrogateResult(result.id)}
+                          type="button"
+                        >
+                          {scanActionLoading ? 'Running...' : 'Interrogate file'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       {selectedResult ? (
         <div className="result-detail-overlay" role="dialog" aria-modal="true">
