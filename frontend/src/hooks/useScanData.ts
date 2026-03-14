@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 
 import {
+  fetchFolderScanSummary,
   fetchScanResult,
   fetchScanResults,
   fetchScanRuns,
+  type FolderScanSummary,
   startInterrogationScan,
   startInventoryScan,
   type MediaFileScanResult,
@@ -33,6 +35,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
 
   const [results, setResults] = useState<MediaFileScanResult[]>([])
   const [resultsLoading, setResultsLoading] = useState(true)
+  const [folderSummary, setFolderSummary] = useState<FolderScanSummary[]>([])
   const [resultsFilters, setResultsFilters] = useState<ScanResultsFilter>(INITIAL_FILTERS)
   const [selectedResult, setSelectedResult] = useState<MediaFileScanResult | null>(null)
 
@@ -67,9 +70,19 @@ export function useScanData({ setError }: UseScanDataArgs) {
     }
   }
 
+  async function loadFolderSummary() {
+    try {
+      const rows = await fetchFolderScanSummary()
+      setFolderSummary(rows)
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unexpected error')
+    }
+  }
+
   useEffect(() => {
     void loadScanRuns()
     void loadResults(INITIAL_FILTERS)
+    void loadFolderSummary()
   }, [])
 
   useEffect(() => {
@@ -77,6 +90,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
       void loadScanRuns()
       if (activeInventoryRun || activeInterrogationRun) {
         void loadResults(resultsFilters)
+        void loadFolderSummary()
       }
     }, 2000)
 
@@ -96,6 +110,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
       )
       await loadScanRuns()
       await loadResults()
+      await loadFolderSummary()
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : 'Unexpected error')
     } finally {
@@ -116,6 +131,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
       )
       await loadScanRuns()
       await loadResults()
+      await loadFolderSummary()
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : 'Unexpected error')
     } finally {
@@ -146,11 +162,13 @@ export function useScanData({ setError }: UseScanDataArgs) {
     activeInterrogationRun,
     results,
     resultsLoading,
+    folderSummary,
     resultsFilters,
     selectedResult,
     setSelectedResult,
     loadScanRuns,
     loadResults,
+    loadFolderSummary,
     handleRunInventoryNow,
     handleRunInterrogationNow,
     handleApplyResultsFilters,

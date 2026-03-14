@@ -94,6 +94,7 @@ export function App() {
     scanActionMessage,
     activeInventoryRun,
     activeInterrogationRun,
+    folderSummary,
     results,
     resultsLoading,
     resultsFilters,
@@ -113,7 +114,9 @@ export function App() {
       return (
         <DashboardPage
           activeMappingsCount={mappings.filter((mapping) => mapping.is_active).length}
+          folderSummary={folderSummary}
           latestScanAt={latestRun?.started_at ?? null}
+          mappings={mappings}
           missingRequirementsCount={onboardingStatus?.missing_requirements.length ?? 0}
           onboardingReady={onboardingStatus?.ready ?? false}
           profilesCount={profiles.length}

@@ -201,6 +201,7 @@ button {
 
 .dashboard-panel {
   display: grid;
+  gap: 18px;
 }
 
 .dashboard-grid {
@@ -220,6 +221,31 @@ button {
   margin: 6px 0;
   font-size: 1.4rem;
   font-weight: 700;
+}
+
+.dashboard-folder-section {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.dashboard-folder-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-folder-count {
+  margin: 12px 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f7bf73;
 }
 
 .mapping-list {

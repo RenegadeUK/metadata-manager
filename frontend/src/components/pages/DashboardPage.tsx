@@ -1,3 +1,5 @@
+import { type FolderMapping, type FolderScanSummary } from '../../lib/api'
+
 type DashboardPageProps = {
   onboardingReady: boolean
   missingRequirementsCount: number
@@ -9,6 +11,8 @@ type DashboardPageProps = {
   latestScanAt: string | null
   scanActionLoading: boolean
   scanActionMessage: string | null
+  mappings: FolderMapping[]
+  folderSummary: FolderScanSummary[]
   onRunScanNow: () => void
 }
 
@@ -29,8 +33,16 @@ export function DashboardPage({
   latestScanAt,
   scanActionLoading,
   scanActionMessage,
+  mappings,
+  folderSummary,
   onRunScanNow,
 }: DashboardPageProps) {
+  const folderCounts = new Map(
+    folderSummary
+      .filter((summary) => summary.folder_mapping_id !== null)
+      .map((summary) => [summary.folder_mapping_id as number, summary.file_count]),
+  )
+
   const metricCards: MetricCard[] = [
     {
       label: 'Onboarding status',
@@ -87,6 +99,22 @@ export function DashboardPage({
             <p className={metricCard.ok ? 'success' : 'error'}>{metricCard.ok ? 'OK' : 'Needs attention'}</p>
           </article>
         ))}
+      </div>
+      <div className="dashboard-folder-section">
+        <div className="list-header">
+          <h3>Mapped folders</h3>
+          <p className="muted">Files currently cataloged per mapping.</p>
+        </div>
+        <div className="dashboard-folder-grid">
+          {mappings.length === 0 ? <p className="muted">No mapped folders yet.</p> : null}
+          {mappings.map((mapping) => (
+            <article className="dashboard-folder-card" key={mapping.id}>
+              <p className="mapping-name">{mapping.name}</p>
+              <p className="mapping-path">{mapping.source_path}</p>
+              <p className="dashboard-folder-count">{folderCounts.get(mapping.id) ?? 0} files</p>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   )

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -58,6 +59,11 @@ class MediaFileScanRead(BaseModel):
     inventory_scanned_at: datetime | None
     interrogated_at: datetime | None
     scanned_at: datetime
+
+
+class FolderScanSummaryRead(BaseModel):
+    folder_mapping_id: int | None
+    file_count: int
 
 
 @router.post("/run", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
@@ -120,6 +126,24 @@ def list_scan_results(
         query = query.filter(MediaFileScan.is_removed.is_(removed))
 
     return query.offset(offset).limit(limit).all()
+
+
+@router.get("/folder-summary", response_model=list[FolderScanSummaryRead])
+def list_folder_summary(db: Session = Depends(get_db)) -> list[FolderScanSummaryRead]:
+    rows = (
+        db.query(
+            MediaFileScan.folder_mapping_id.label("folder_mapping_id"),
+            func.count(MediaFileScan.id).label("file_count"),
+        )
+        .filter(MediaFileScan.is_removed.is_(False))
+        .group_by(MediaFileScan.folder_mapping_id)
+        .all()
+    )
+
+    return [
+        FolderScanSummaryRead(folder_mapping_id=row.folder_mapping_id, file_count=row.file_count)
+        for row in rows
+    ]
 
 
 @router.get("/results/{result_id}", response_model=MediaFileScanRead)

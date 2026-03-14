@@ -135,6 +135,11 @@ export type ScanResultsFilter = {
   offset?: number
 }
 
+export type FolderScanSummary = {
+  folder_mapping_id: number | null
+  file_count: number
+}
+
 type SettingsResponse = {
   values: AppSettings
   restart_required: boolean
@@ -382,6 +387,14 @@ export async function fetchScanResult(resultId: number): Promise<MediaFileScanRe
   const response = await fetch(`${API_BASE}/api/scan/results/${resultId}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch scan result: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchFolderScanSummary(): Promise<FolderScanSummary[]> {
+  const response = await fetch(`${API_BASE}/api/scan/folder-summary`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch folder scan summary: ${response.status}`)
   }
   return response.json()
 }
