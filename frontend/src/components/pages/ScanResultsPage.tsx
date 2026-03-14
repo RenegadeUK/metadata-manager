@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 
 import {
+  type ComplianceSummary,
   type ScanFilterOptions,
   type FolderScanSummary,
   type FolderMapping,
@@ -9,10 +10,18 @@ import {
   type ScanResultsFilter,
   type ScanRun,
 } from '../../lib/api'
+import {
+  getComplianceStatus,
+  getCompliantPieceCount as getSharedCompliantPieceCount,
+  isCodecCompliant,
+  isFileFormatCompliant,
+  isPixelFormatCompliant,
+} from '../../lib/compliance'
 
 type ScanResultsPageProps = {
   mappings: FolderMapping[]
   folderSummary: FolderScanSummary[]
+  complianceSummary: ComplianceSummary
   filterOptions: ScanFilterOptions
   activeQualityProfile?: QualityProfile
   results: MediaFileScanResult[]
@@ -33,6 +42,7 @@ type ScanResultsPageProps = {
 export function ScanResultsPage({
   mappings,
   folderSummary,
+  complianceSummary,
   filterOptions,
   activeQualityProfile,
   results,
@@ -63,8 +73,9 @@ export function ScanResultsPage({
 
   const selectedResultDisplay = selectedResult
     ? (() => {
-        const { all_tags_json, quality_status, ...rest } = selectedResult
+        const { all_tags_json, ...rest } = selectedResult
         let allTags: unknown = all_tags_json
+        const complianceStatus = getComplianceStatus(selectedResult, activeQualityProfile)
 
         if (all_tags_json) {
           try {
@@ -77,7 +88,7 @@ export function ScanResultsPage({
         return {
           ...rest,
           all_tags: allTags,
-          compliance_status: quality_status,
+          compliance_status: complianceStatus,
         }
       })()
     : null
@@ -142,7 +153,7 @@ export function ScanResultsPage({
       }
     }
 
-    if (actualCodec === expectedCodec) {
+    if (isCodecCompliant(result, activeQualityProfile)) {
       return {
         label: actualCodec,
         className: 'status-badge status-badge-ok',
@@ -155,23 +166,9 @@ export function ScanResultsPage({
     }
   }
 
-  function isCodecCompliant(result: MediaFileScanResult) {
-    const expectedCodec = activeQualityProfile?.codec
-    const actualCodec = result.codec
-    if (!expectedCodec || !actualCodec) {
-      return false
-    }
-    return actualCodec === expectedCodec
-  }
-
   function getFileFormatBadge(result: MediaFileScanResult) {
     const expectedFileFormat = activeQualityProfile?.file_format
     const actualFileFormat = result.extension
-    const normalizedExpectedFileFormats = (expectedFileFormat ?? '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase().replace(/^\./, ''))
-      .filter((value) => value.length > 0)
-    const normalizedActualFileFormat = actualFileFormat?.trim().toLowerCase().replace(/^\./, '')
 
     if (!expectedFileFormat) {
       return {
@@ -187,11 +184,7 @@ export function ScanResultsPage({
       }
     }
 
-    if (
-      normalizedExpectedFileFormats.length > 0 &&
-      normalizedActualFileFormat !== undefined &&
-      normalizedExpectedFileFormats.includes(normalizedActualFileFormat)
-    ) {
+    if (isFileFormatCompliant(result, activeQualityProfile)) {
       return {
         label: actualFileFormat,
         className: 'status-badge status-badge-ok',
@@ -204,30 +197,9 @@ export function ScanResultsPage({
     }
   }
 
-  function isFileFormatCompliant(result: MediaFileScanResult) {
-    const expectedFileFormat = activeQualityProfile?.file_format
-    const actualFileFormat = result.extension
-    const normalizedExpectedFileFormats = (expectedFileFormat ?? '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase().replace(/^\./, ''))
-      .filter((value) => value.length > 0)
-    const normalizedActualFileFormat = actualFileFormat?.trim().toLowerCase().replace(/^\./, '')
-
-    if (!expectedFileFormat || !normalizedActualFileFormat) {
-      return false
-    }
-
-    return normalizedExpectedFileFormats.includes(normalizedActualFileFormat)
-  }
-
   function getPixelFormatBadge(result: MediaFileScanResult) {
     const expectedPixelFormat = activeQualityProfile?.pixel_format
     const actualPixelFormat = result.pixel_format
-    const normalizedExpectedPixelFormats = (expectedPixelFormat ?? '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase())
-      .filter((value) => value.length > 0)
-    const normalizedActualPixelFormat = actualPixelFormat?.trim().toLowerCase()
 
     if (!expectedPixelFormat) {
       return {
@@ -243,11 +215,7 @@ export function ScanResultsPage({
       }
     }
 
-    if (
-      normalizedExpectedPixelFormats.length > 0 &&
-      normalizedActualPixelFormat !== undefined &&
-      normalizedExpectedPixelFormats.includes(normalizedActualPixelFormat)
-    ) {
+    if (isPixelFormatCompliant(result, activeQualityProfile)) {
       return {
         label: actualPixelFormat,
         className: 'status-badge status-badge-ok',
@@ -260,29 +228,8 @@ export function ScanResultsPage({
     }
   }
 
-  function isPixelFormatCompliant(result: MediaFileScanResult) {
-    const expectedPixelFormat = activeQualityProfile?.pixel_format
-    const actualPixelFormat = result.pixel_format
-    const normalizedExpectedPixelFormats = (expectedPixelFormat ?? '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase())
-      .filter((value) => value.length > 0)
-    const normalizedActualPixelFormat = actualPixelFormat?.trim().toLowerCase()
-
-    if (!expectedPixelFormat || !normalizedActualPixelFormat) {
-      return false
-    }
-
-    return normalizedExpectedPixelFormats.includes(normalizedActualPixelFormat)
-  }
-
   function getRowComplianceClass(result: MediaFileScanResult) {
-    const compliantChecks = [
-      isCodecCompliant(result),
-      isPixelFormatCompliant(result),
-      isFileFormatCompliant(result),
-      result.tag_status === 'tag_match',
-    ].filter(Boolean).length
+    const compliantChecks = getSharedCompliantPieceCount(result, activeQualityProfile)
 
     if (compliantChecks === 4) {
       return 'results-row-compliance-full'
@@ -314,6 +261,7 @@ export function ScanResultsPage({
       extension: '',
       codec: '',
       pixelFormat: '',
+      complianceStatus: undefined,
       tagStatus: '',
       removed: undefined,
       limit: pageSize,
@@ -327,6 +275,19 @@ export function ScanResultsPage({
     const nextFilters = {
       ...localFilters,
       folderMappingId,
+      limit: pageSize,
+      offset: 0,
+    }
+    setLocalFilters(nextFilters)
+    onApplyFilters(nextFilters)
+  }
+
+  function applyComplianceFilter(
+    complianceStatus: 'compliant' | 'partial_compliant' | 'non_compliant' | undefined,
+  ) {
+    const nextFilters = {
+      ...localFilters,
+      complianceStatus,
       limit: pageSize,
       offset: 0,
     }
@@ -387,6 +348,53 @@ export function ScanResultsPage({
             {mapping.name} ({folderCountMap.get(mapping.id) ?? 0})
           </button>
         ))}
+      </div>
+
+      <div className="results-folder-filters">
+        <button
+          className={
+            localFilters.complianceStatus === undefined
+              ? 'results-folder-filter results-folder-filter-active'
+              : 'results-folder-filter'
+          }
+          onClick={() => applyComplianceFilter(undefined)}
+          type="button"
+        >
+          All compliance ({complianceSummary.total})
+        </button>
+        <button
+          className={
+            localFilters.complianceStatus === 'compliant'
+              ? 'results-folder-filter results-folder-filter-active'
+              : 'results-folder-filter'
+          }
+          onClick={() => applyComplianceFilter('compliant')}
+          type="button"
+        >
+          Compliant ({complianceSummary.compliant})
+        </button>
+        <button
+          className={
+            localFilters.complianceStatus === 'partial_compliant'
+              ? 'results-folder-filter results-folder-filter-active'
+              : 'results-folder-filter'
+          }
+          onClick={() => applyComplianceFilter('partial_compliant')}
+          type="button"
+        >
+          Partial ({complianceSummary.partial_compliant})
+        </button>
+        <button
+          className={
+            localFilters.complianceStatus === 'non_compliant'
+              ? 'results-folder-filter results-folder-filter-active'
+              : 'results-folder-filter'
+          }
+          onClick={() => applyComplianceFilter('non_compliant')}
+          type="button"
+        >
+          Non compliant ({complianceSummary.non_compliant})
+        </button>
       </div>
 
       {activeInventoryRun ? (

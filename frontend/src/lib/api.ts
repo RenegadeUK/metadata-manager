@@ -135,6 +135,7 @@ export type ScanResultsFilter = {
   extension?: string
   codec?: string
   pixelFormat?: string
+  complianceStatus?: 'compliant' | 'partial_compliant' | 'non_compliant'
   tagStatus?: string
   removed?: boolean
   limit?: number
@@ -158,6 +159,13 @@ export type ScanResultsResponse = {
   total_count: number
   limit: number
   offset: number
+}
+
+export type ComplianceSummary = {
+  compliant: number
+  partial_compliant: number
+  non_compliant: number
+  total: number
 }
 
 type SettingsResponse = {
@@ -424,6 +432,7 @@ export async function fetchScanResults(
   if (filters.extension) params.set('extension', filters.extension)
   if (filters.codec) params.set('codec', filters.codec)
   if (filters.pixelFormat) params.set('pixel_format', filters.pixelFormat)
+  if (filters.complianceStatus) params.set('compliance_status', filters.complianceStatus)
   if (filters.tagStatus) params.set('tag_status', filters.tagStatus)
   if (filters.removed !== undefined) params.set('removed', String(filters.removed))
   params.set('limit', String(filters.limit ?? 500))
@@ -433,6 +442,28 @@ export async function fetchScanResults(
   const response = await fetch(`${API_BASE}/api/scan/results${query ? `?${query}` : ''}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch scan results: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchComplianceSummary(
+  filters: ScanResultsFilter = {},
+): Promise<ComplianceSummary> {
+  const params = new URLSearchParams()
+  if (filters.pathQuery) params.set('path_query', filters.pathQuery)
+  if (filters.folderMappingId !== undefined) {
+    params.set('folder_mapping_id', String(filters.folderMappingId))
+  }
+  if (filters.extension) params.set('extension', filters.extension)
+  if (filters.codec) params.set('codec', filters.codec)
+  if (filters.pixelFormat) params.set('pixel_format', filters.pixelFormat)
+  if (filters.tagStatus) params.set('tag_status', filters.tagStatus)
+  if (filters.removed !== undefined) params.set('removed', String(filters.removed))
+
+  const query = params.toString()
+  const response = await fetch(`${API_BASE}/api/scan/compliance-summary${query ? `?${query}` : ''}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch compliance summary: ${response.status}`)
   }
   return response.json()
 }

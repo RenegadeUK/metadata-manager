@@ -2,13 +2,14 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import and_, case, func, literal
+from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.media_file_scan import MediaFileScan
 from app.models.quality_profile import QualityProfile
 from app.models.scan_run import ScanRun
+from app.services.compliance import COMPLIANCE_CHECK_COUNT, build_media_scan_compliant_piece_count
 from app.services.scanner import interrogate_scan_result, launch_interrogation_scan, launch_inventory_scan
 
 router = APIRouter(prefix="/api/scan", tags=["scan"])
@@ -82,6 +83,66 @@ class ScanResultsPageRead(BaseModel):
     offset: int
 
 
+class ComplianceSummaryRead(BaseModel):
+    compliant: int
+    partial_compliant: int
+    non_compliant: int
+    total: int
+
+
+def _get_active_profile(db: Session) -> QualityProfile | None:
+    return (
+        db.query(QualityProfile)
+        .filter(QualityProfile.is_active.is_(True))
+        .order_by(QualityProfile.id.asc())
+        .first()
+    )
+
+
+def _apply_scan_result_filters(
+    query,
+    *,
+    path_query: str | None,
+    folder_mapping_id: int | None,
+    extension: str | None,
+    codec: str | None,
+    pixel_format: str | None,
+    tag_status: str | None,
+    removed: bool | None,
+):
+    if path_query:
+        query = query.filter(MediaFileScan.file_path.ilike(f"%{path_query}%"))
+    if folder_mapping_id is not None:
+        query = query.filter(MediaFileScan.folder_mapping_id == folder_mapping_id)
+    if extension:
+        query = query.filter(MediaFileScan.extension == extension.lower().lstrip("."))
+    if codec:
+        query = query.filter(MediaFileScan.codec.ilike(codec.strip()))
+    if pixel_format:
+        query = query.filter(MediaFileScan.pixel_format.ilike(pixel_format.strip()))
+    if tag_status:
+        query = query.filter(MediaFileScan.tag_status == tag_status)
+    if removed is not None:
+        query = query.filter(MediaFileScan.is_removed.is_(removed))
+    return query
+
+
+def _apply_compliance_status_filter(query, compliance_status: str | None, active_profile: QualityProfile | None):
+    if not compliance_status:
+        return query
+
+    compliant_piece_count = build_media_scan_compliant_piece_count(active_profile)
+
+    if compliance_status == "compliant":
+        return query.filter(compliant_piece_count == COMPLIANCE_CHECK_COUNT)
+    if compliance_status == "partial_compliant":
+        return query.filter(and_(compliant_piece_count > 0, compliant_piece_count < COMPLIANCE_CHECK_COUNT))
+    if compliance_status == "non_compliant":
+        return query.filter(compliant_piece_count == 0)
+
+    return query
+
+
 @router.post("/run", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
 def start_scan(db: Session = Depends(get_db)) -> ScanRun:
     try:
@@ -124,28 +185,26 @@ def list_scan_results(
     extension: str | None = Query(default=None),
     codec: str | None = Query(default=None),
     pixel_format: str | None = Query(default=None),
+    compliance_status: str | None = Query(default=None),
     tag_status: str | None = Query(default=None),
     removed: bool | None = Query(default=None),
     limit: int = Query(default=200, ge=1, le=2000),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> ScanResultsPageRead:
+    active_profile = _get_active_profile(db)
     query = db.query(MediaFileScan).order_by(MediaFileScan.scanned_at.desc())
-
-    if path_query:
-        query = query.filter(MediaFileScan.file_path.ilike(f"%{path_query}%"))
-    if folder_mapping_id is not None:
-        query = query.filter(MediaFileScan.folder_mapping_id == folder_mapping_id)
-    if extension:
-        query = query.filter(MediaFileScan.extension == extension.lower().lstrip("."))
-    if codec:
-        query = query.filter(MediaFileScan.codec.ilike(codec.strip()))
-    if pixel_format:
-        query = query.filter(MediaFileScan.pixel_format.ilike(pixel_format.strip()))
-    if tag_status:
-        query = query.filter(MediaFileScan.tag_status == tag_status)
-    if removed is not None:
-        query = query.filter(MediaFileScan.is_removed.is_(removed))
+    query = _apply_scan_result_filters(
+        query,
+        path_query=path_query,
+        folder_mapping_id=folder_mapping_id,
+        extension=extension,
+        codec=codec,
+        pixel_format=pixel_format,
+        tag_status=tag_status,
+        removed=removed,
+    )
+    query = _apply_compliance_status_filter(query, compliance_status, active_profile)
 
     total_count = query.count()
     items = query.offset(offset).limit(limit).all()
@@ -160,42 +219,16 @@ def list_scan_results(
 
 @router.get("/folder-summary", response_model=list[FolderScanSummaryRead])
 def list_folder_summary(db: Session = Depends(get_db)) -> list[FolderScanSummaryRead]:
-    active_profile = (
-        db.query(QualityProfile)
-        .filter(QualityProfile.is_active.is_(True))
-        .order_by(QualityProfile.id.asc())
-        .first()
-    )
-
-    compliant_condition = literal(False)
-    if active_profile is not None:
-        compliant_condition = MediaFileScan.codec == active_profile.codec
-        if active_profile.file_format:
-            allowed_file_formats = [
-                value.strip().lower().lstrip(".")
-                for value in active_profile.file_format.split(",")
-                if value.strip()
-            ]
-            compliant_condition = and_(
-                compliant_condition,
-                MediaFileScan.extension.in_(allowed_file_formats),
-            )
-        if active_profile.pixel_format:
-            allowed_pixel_formats = [
-                value.strip()
-                for value in active_profile.pixel_format.split(",")
-                if value.strip()
-            ]
-            compliant_condition = and_(
-                compliant_condition,
-                MediaFileScan.pixel_format.in_(allowed_pixel_formats),
-            )
+    active_profile = _get_active_profile(db)
+    compliant_piece_count = build_media_scan_compliant_piece_count(active_profile)
 
     rows = (
         db.query(
             MediaFileScan.folder_mapping_id.label("folder_mapping_id"),
             func.count(MediaFileScan.id).label("file_count"),
-            func.sum(case((compliant_condition, 1), else_=0)).label("compliant_count"),
+            func.sum(case((compliant_piece_count == COMPLIANCE_CHECK_COUNT, 1), else_=0)).label(
+                "compliant_count"
+            ),
         )
         .filter(MediaFileScan.is_removed.is_(False))
         .group_by(MediaFileScan.folder_mapping_id)
@@ -243,6 +276,48 @@ def get_scan_filter_options(db: Session = Depends(get_db)) -> ScanFilterOptionsR
         extensions=extensions,
         codecs=codecs,
         pixel_formats=pixel_formats,
+    )
+
+
+@router.get("/compliance-summary", response_model=ComplianceSummaryRead)
+def get_compliance_summary(
+    path_query: str | None = Query(default=None),
+    folder_mapping_id: int | None = Query(default=None),
+    extension: str | None = Query(default=None),
+    codec: str | None = Query(default=None),
+    pixel_format: str | None = Query(default=None),
+    tag_status: str | None = Query(default=None),
+    removed: bool | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> ComplianceSummaryRead:
+    active_profile = _get_active_profile(db)
+    compliant_piece_count = build_media_scan_compliant_piece_count(active_profile)
+
+    query = db.query(
+        func.count(MediaFileScan.id).label("total"),
+        func.sum(case((compliant_piece_count == COMPLIANCE_CHECK_COUNT, 1), else_=0)).label("compliant"),
+        func.sum(
+            case((and_(compliant_piece_count > 0, compliant_piece_count < COMPLIANCE_CHECK_COUNT), 1), else_=0)
+        ).label("partial_compliant"),
+        func.sum(case((compliant_piece_count == 0, 1), else_=0)).label("non_compliant"),
+    )
+    query = _apply_scan_result_filters(
+        query,
+        path_query=path_query,
+        folder_mapping_id=folder_mapping_id,
+        extension=extension,
+        codec=codec,
+        pixel_format=pixel_format,
+        tag_status=tag_status,
+        removed=removed,
+    )
+
+    row = query.one()
+    return ComplianceSummaryRead(
+        compliant=int(row.compliant or 0),
+        partial_compliant=int(row.partial_compliant or 0),
+        non_compliant=int(row.non_compliant or 0),
+        total=int(row.total or 0),
     )
 
 

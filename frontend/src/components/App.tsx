@@ -95,6 +95,7 @@ export function App() {
     activeInventoryRun,
     activeInterrogationRun,
     folderSummary,
+    complianceSummary,
     filterOptions,
     results,
     resultsTotalCount,
@@ -124,9 +125,10 @@ export function App() {
       extension: '',
       codec: '',
       pixelFormat: '',
+      complianceStatus: undefined,
       tagStatus: '',
       removed: undefined,
-      limit: 200,
+      limit: 500,
       offset: 0,
     })
     setSelectedResult(null)
@@ -248,6 +250,7 @@ export function App() {
         filters={resultsFilters}
         filterOptions={filterOptions}
         folderSummary={folderSummary}
+        complianceSummary={complianceSummary}
         mappings={mappings}
         results={results}
         resultsTotalCount={resultsTotalCount}
