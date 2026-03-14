@@ -229,6 +229,8 @@ export function App() {
 
     return (
       <ScanResultsPage
+        activeInterrogationRun={activeInterrogationRun}
+        activeInventoryRun={activeInventoryRun}
         filters={resultsFilters}
         mappings={mappings}
         results={results}

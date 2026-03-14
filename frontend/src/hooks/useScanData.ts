@@ -18,6 +18,10 @@ type UseScanDataArgs = {
   setError: (message: string | null) => void
 }
 
+type LoadOptions = {
+  showLoading?: boolean
+}
+
 const INITIAL_FILTERS: ScanResultsFilter = {
   pathQuery: '',
   extension: '',
@@ -47,27 +51,37 @@ export function useScanData({ setError }: UseScanDataArgs) {
     (scanRun) => scanRun.run_type === 'interrogation' && scanRun.status === 'running',
   )
 
-  async function loadScanRuns() {
-    setScanRunsLoading(true)
+  async function loadScanRuns(options: LoadOptions = {}) {
+    const { showLoading = true } = options
+    if (showLoading) {
+      setScanRunsLoading(true)
+    }
     try {
       const rows = await fetchScanRuns()
       setScanRuns(rows)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unexpected error')
     } finally {
-      setScanRunsLoading(false)
+      if (showLoading) {
+        setScanRunsLoading(false)
+      }
     }
   }
 
-  async function loadResults(filters: ScanResultsFilter = resultsFilters) {
-    setResultsLoading(true)
+  async function loadResults(filters: ScanResultsFilter = resultsFilters, options: LoadOptions = {}) {
+    const { showLoading = true } = options
+    if (showLoading) {
+      setResultsLoading(true)
+    }
     try {
       const rows = await fetchScanResults(filters)
       setResults(rows)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unexpected error')
     } finally {
-      setResultsLoading(false)
+      if (showLoading) {
+        setResultsLoading(false)
+      }
     }
   }
 
@@ -88,9 +102,8 @@ export function useScanData({ setError }: UseScanDataArgs) {
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      void loadScanRuns()
+      void loadScanRuns({ showLoading: false })
       if (activeInventoryRun || activeInterrogationRun) {
-        void loadResults(resultsFilters)
         void loadFolderSummary()
       }
     }, 2000)

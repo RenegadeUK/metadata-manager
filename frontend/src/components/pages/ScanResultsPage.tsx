@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 
-import { type FolderMapping, type MediaFileScanResult, type ScanResultsFilter } from '../../lib/api'
+import {
+  type FolderMapping,
+  type MediaFileScanResult,
+  type ScanResultsFilter,
+  type ScanRun,
+} from '../../lib/api'
 
 type ScanResultsPageProps = {
   mappings: FolderMapping[]
@@ -9,6 +14,8 @@ type ScanResultsPageProps = {
   filters: ScanResultsFilter
   selectedResult: MediaFileScanResult | null
   scanActionLoading: boolean
+  activeInventoryRun?: ScanRun
+  activeInterrogationRun?: ScanRun
   onApplyFilters: (filters: ScanResultsFilter) => void
   onRefresh: () => void
   onInterrogateResult: (resultId: number) => void
@@ -23,6 +30,8 @@ export function ScanResultsPage({
   filters,
   selectedResult,
   scanActionLoading,
+  activeInventoryRun,
+  activeInterrogationRun,
   onApplyFilters,
   onRefresh,
   onInterrogateResult,
@@ -77,6 +86,17 @@ export function ScanResultsPage({
           Refresh
         </button>
       </div>
+
+      {activeInventoryRun ? (
+        <p className="muted">
+          Inventory running: {activeInventoryRun.processed_files}/{activeInventoryRun.total_files} processed.
+        </p>
+      ) : null}
+      {activeInterrogationRun ? (
+        <p className="muted">
+          Interrogation running: {activeInterrogationRun.processed_files}/{activeInterrogationRun.total_files} processed.
+        </p>
+      ) : null}
 
       <div className="results-filters">
         <select
