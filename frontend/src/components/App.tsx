@@ -109,6 +109,8 @@ export function App() {
     handleInterrogateResult,
   } = useScanData({ setError })
 
+  const activeQualityProfile = profiles.find((profile) => profile.is_active)
+
   function handleOpenMappingResults(mappingId: number) {
     void handleApplyResultsFilters({
       folderMappingId: mappingId,
@@ -231,6 +233,7 @@ export function App() {
       <ScanResultsPage
         activeInterrogationRun={activeInterrogationRun}
         activeInventoryRun={activeInventoryRun}
+        activeQualityProfile={activeQualityProfile}
         filters={resultsFilters}
         mappings={mappings}
         results={results}

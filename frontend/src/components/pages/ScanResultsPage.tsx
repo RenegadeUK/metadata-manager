@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react'
 import {
   type FolderMapping,
   type MediaFileScanResult,
+  type QualityProfile,
   type ScanResultsFilter,
   type ScanRun,
 } from '../../lib/api'
 
 type ScanResultsPageProps = {
   mappings: FolderMapping[]
+  activeQualityProfile?: QualityProfile
   results: MediaFileScanResult[]
   resultsLoading: boolean
   filters: ScanResultsFilter
@@ -25,6 +27,7 @@ type ScanResultsPageProps = {
 
 export function ScanResultsPage({
   mappings,
+  activeQualityProfile,
   results,
   resultsLoading,
   filters,
@@ -68,6 +71,61 @@ export function ScanResultsPage({
       return { label: 'Removed', className: 'status-badge status-badge-removed' }
     }
     return { label: 'Active', className: 'status-badge status-badge-active' }
+  }
+
+  function getCodecBadge(result: MediaFileScanResult) {
+    const expectedCodec = activeQualityProfile?.codec
+    const actualCodec = result.codec
+
+    if (!expectedCodec || !actualCodec) {
+      return {
+        label: `Codec: ${actualCodec ?? 'Unknown'}`,
+        className: 'status-badge status-badge-codec-unknown',
+      }
+    }
+
+    if (actualCodec === expectedCodec) {
+      return {
+        label: `Codec: ${actualCodec}`,
+        className: 'status-badge status-badge-codec-match',
+      }
+    }
+
+    return {
+      label: `Codec: ${actualCodec}`,
+      className: 'status-badge status-badge-codec-mismatch',
+    }
+  }
+
+  function getPixelFormatBadge(result: MediaFileScanResult) {
+    const expectedPixelFormat = activeQualityProfile?.pixel_format
+    const actualPixelFormat = result.pixel_format
+
+    if (!expectedPixelFormat) {
+      return {
+        label: `Pixel format: ${actualPixelFormat ?? 'Unknown'}`,
+        className: 'status-badge status-badge-pixel-unknown',
+      }
+    }
+
+    if (!actualPixelFormat) {
+      return {
+        label: 'Pixel format: Unknown',
+        className: 'status-badge status-badge-pixel-unknown',
+      }
+    }
+
+    if (actualPixelFormat === expectedPixelFormat) {
+      return {
+        label: `Pixel format: ${actualPixelFormat}`,
+        className: 'status-badge status-badge-pixel-match',
+      }
+    }
+
+    return {
+      label: `Pixel format: ${actualPixelFormat}`,
+      className: 'status-badge status-badge-pixel-mismatch',
+    }
   }
 
   useEffect(() => {
@@ -184,12 +242,16 @@ export function ScanResultsPage({
           const qualityBadge = getQualityBadge(result)
           const tagBadge = getTagBadge(result)
           const removalBadge = getRemovalBadge(result)
+          const codecBadge = getCodecBadge(result)
+          const pixelFormatBadge = getPixelFormatBadge(result)
 
           return (
             <li key={result.id}>
               <div className="result-badges">
                 <span className={qualityBadge.className}>{qualityBadge.label}</span>
                 <span className={tagBadge.className}>{tagBadge.label}</span>
+                <span className={codecBadge.className}>{codecBadge.label}</span>
+                <span className={pixelFormatBadge.className}>{pixelFormatBadge.label}</span>
                 <span className={removalBadge.className}>{removalBadge.label}</span>
               </div>
               <div className="list-header">
