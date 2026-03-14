@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -13,15 +13,15 @@ class MediaFileScan(Base):
     file_path: Mapped[str] = mapped_column(String(4096), unique=True, nullable=False)
     file_name: Mapped[str] = mapped_column(String(1024), nullable=False)
     extension: Mapped[str] = mapped_column(String(32), nullable=False)
-    device_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    inode: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    device_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    inode: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     folder_mapping_id: Mapped[int | None] = mapped_column(
         ForeignKey("folder_mappings.id", ondelete="SET NULL"), nullable=True
     )
     scan_run_id: Mapped[int | None] = mapped_column(
         ForeignKey("scan_runs.id", ondelete="SET NULL"), nullable=True
     )
-    size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     modified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     codec: Mapped[str | None] = mapped_column(String(100), nullable=True)
     pixel_format: Mapped[str | None] = mapped_column(String(100), nullable=True)

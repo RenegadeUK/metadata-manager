@@ -3,18 +3,23 @@ from __future__ import annotations
 import fnmatch
 import json
 import subprocess
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.db.session import SessionLocal
 from app.models.app_setting import AppSetting
 from app.models.folder_mapping import FolderMapping
 from app.models.media_file_scan import MediaFileScan
 from app.models.metadata_tag_rule import MetadataTagRule
 from app.models.quality_profile import QualityProfile
 from app.models.scan_run import ScanRun
+
+
+_scan_thread_lock = threading.Lock()
 
 
 def _get_setting(db: Session, key: str, default: str) -> str:
@@ -234,7 +239,31 @@ def _lookup_scan_row(db: Session, file_path: Path, device_id: int | None, inode:
     return db.query(MediaFileScan).filter(MediaFileScan.file_path == str(file_path)).one_or_none()
 
 
-def run_inventory_scan(db: Session) -> ScanRun:
+def get_running_scan(db: Session, run_type: str) -> ScanRun | None:
+    return (
+        db.query(ScanRun)
+        .filter(ScanRun.run_type == run_type, ScanRun.status == "running")
+        .order_by(ScanRun.started_at.desc(), ScanRun.id.desc())
+        .first()
+    )
+
+
+def fail_abandoned_runs(db: Session) -> None:
+    abandoned_runs = db.query(ScanRun).filter(ScanRun.status == "running").all()
+    if not abandoned_runs:
+        return
+
+    now = datetime.now(timezone.utc)
+    for run in abandoned_runs:
+        run.status = "failed"
+        run.message = "Marked failed after application restart"
+        run.ended_at = now
+        db.add(run)
+
+    db.commit()
+
+
+def _inventory_scan_impl(db: Session, run: ScanRun) -> ScanRun:
     active_mappings = (
         db.query(FolderMapping).filter(FolderMapping.is_active.is_(True)).order_by(FolderMapping.id.asc()).all()
     )
@@ -251,8 +280,6 @@ def run_inventory_scan(db: Session) -> ScanRun:
         hard_delete_after_days = max(0, int(retention_raw))
     except ValueError:
         hard_delete_after_days = 14
-
-    run = _create_run(db, "inventory")
 
     try:
         candidates = _collect_candidate_files(active_mappings, include_extensions, exclude_patterns)
@@ -354,7 +381,7 @@ def run_inventory_scan(db: Session) -> ScanRun:
         raise
 
 
-def run_interrogation_scan(db: Session) -> ScanRun:
+def _interrogation_scan_impl(db: Session, run: ScanRun) -> ScanRun:
     active_profile = (
         db.query(QualityProfile)
         .filter(QualityProfile.is_active.is_(True))
@@ -378,8 +405,6 @@ def run_interrogation_scan(db: Session) -> ScanRun:
         timeout_seconds = int(timeout_raw)
     except ValueError:
         timeout_seconds = 30
-
-    run = _create_run(db, "interrogation")
 
     try:
         targets = (
@@ -452,6 +477,72 @@ def run_interrogation_scan(db: Session) -> ScanRun:
     except Exception as scan_error:
         _fail_run(db, run, str(scan_error))
         raise
+
+
+def _run_inventory_scan_in_thread(run_id: int) -> None:
+    db = SessionLocal()
+    try:
+        run = db.get(ScanRun, run_id)
+        if run is None:
+            return
+        _inventory_scan_impl(db, run)
+    finally:
+        db.close()
+
+
+def _run_interrogation_scan_in_thread(run_id: int) -> None:
+    db = SessionLocal()
+    try:
+        run = db.get(ScanRun, run_id)
+        if run is None:
+            return
+        _interrogation_scan_impl(db, run)
+    finally:
+        db.close()
+
+
+def launch_inventory_scan(db: Session) -> ScanRun:
+    with _scan_thread_lock:
+        existing_run = get_running_scan(db, "inventory")
+        if existing_run is not None:
+            db.refresh(existing_run)
+            return existing_run
+
+        run = _create_run(db, "inventory")
+        threading.Thread(target=_run_inventory_scan_in_thread, args=(run.id,), daemon=True).start()
+        db.refresh(run)
+        return run
+
+
+def launch_interrogation_scan(db: Session) -> ScanRun:
+    with _scan_thread_lock:
+        existing_run = get_running_scan(db, "interrogation")
+        if existing_run is not None:
+            db.refresh(existing_run)
+            return existing_run
+
+        run = _create_run(db, "interrogation")
+        threading.Thread(target=_run_interrogation_scan_in_thread, args=(run.id,), daemon=True).start()
+        db.refresh(run)
+        return run
+
+
+def run_inventory_scan(db: Session) -> ScanRun:
+    existing_run = get_running_scan(db, "inventory")
+    if existing_run is not None:
+        return existing_run
+
+    run = _create_run(db, "inventory")
+    return _inventory_scan_impl(db, run)
+
+
+def run_interrogation_scan(db: Session) -> ScanRun:
+    existing_run = get_running_scan(db, "interrogation")
+    if existing_run is not None:
+        return existing_run
+
+    run = _create_run(db, "interrogation")
+    return _interrogation_scan_impl(db, run)
 
 
 def run_scan(db: Session) -> ScanRun:

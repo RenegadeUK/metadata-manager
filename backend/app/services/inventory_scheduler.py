@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.models.app_setting import AppSetting
-from app.services.scanner import run_inventory_scan
+from app.services.scanner import launch_inventory_scan
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def _run_inventory_cycle() -> None:
         if interval_seconds == DISABLED_INTERVAL_SECONDS:
             return
 
-        run_inventory_scan(db)
+        launch_inventory_scan(db)
     except Exception:
         logger.exception("Scheduled inventory scan failed")
     finally:

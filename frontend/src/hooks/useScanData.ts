@@ -36,6 +36,13 @@ export function useScanData({ setError }: UseScanDataArgs) {
   const [resultsFilters, setResultsFilters] = useState<ScanResultsFilter>(INITIAL_FILTERS)
   const [selectedResult, setSelectedResult] = useState<MediaFileScanResult | null>(null)
 
+  const activeInventoryRun = scanRuns.find(
+    (scanRun) => scanRun.run_type === 'inventory' && scanRun.status === 'running',
+  )
+  const activeInterrogationRun = scanRuns.find(
+    (scanRun) => scanRun.run_type === 'interrogation' && scanRun.status === 'running',
+  )
+
   async function loadScanRuns() {
     setScanRunsLoading(true)
     try {
@@ -65,6 +72,17 @@ export function useScanData({ setError }: UseScanDataArgs) {
     void loadResults(INITIAL_FILTERS)
   }, [])
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void loadScanRuns()
+      if (activeInventoryRun || activeInterrogationRun) {
+        void loadResults(resultsFilters)
+      }
+    }, 2000)
+
+    return () => window.clearInterval(intervalId)
+  }, [activeInterrogationRun, activeInventoryRun, resultsFilters])
+
   async function handleRunInventoryNow() {
     setScanActionLoading(true)
     setScanActionMessage(null)
@@ -72,7 +90,9 @@ export function useScanData({ setError }: UseScanDataArgs) {
     try {
       const run = await startInventoryScan()
       setScanActionMessage(
-        `Inventory run ${run.id} completed: ${run.processed_files}/${run.total_files} files.`
+        run.status === 'running'
+          ? `Inventory run ${run.id} started. Progress will refresh automatically.`
+          : `Inventory run ${run.id} completed: ${run.processed_files}/${run.total_files} files.`
       )
       await loadScanRuns()
       await loadResults()
@@ -90,7 +110,9 @@ export function useScanData({ setError }: UseScanDataArgs) {
     try {
       const run = await startInterrogationScan()
       setScanActionMessage(
-        `Interrogation run ${run.id} completed: ${run.processed_files}/${run.total_files} files.`
+        run.status === 'running'
+          ? `Interrogation run ${run.id} started. Progress will refresh automatically.`
+          : `Interrogation run ${run.id} completed: ${run.processed_files}/${run.total_files} files.`
       )
       await loadScanRuns()
       await loadResults()
@@ -120,6 +142,8 @@ export function useScanData({ setError }: UseScanDataArgs) {
     scanRunsLoading,
     scanActionLoading,
     scanActionMessage,
+    activeInventoryRun,
+    activeInterrogationRun,
     results,
     resultsLoading,
     resultsFilters,

@@ -7,7 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from app.api import api_router
 from app.core.config import get_settings
 from app.db.migrations import run_migrations
+from app.db.session import SessionLocal
 from app.services.inventory_scheduler import start_inventory_scheduler, stop_inventory_scheduler
+from app.services.scanner import fail_abandoned_runs
 
 settings = get_settings()
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -27,6 +29,11 @@ app.include_router(api_router)
 @app.on_event("startup")
 async def on_startup() -> None:
     run_migrations()
+    db = SessionLocal()
+    try:
+        fail_abandoned_runs(db)
+    finally:
+        db.close()
     start_inventory_scheduler()
 
 

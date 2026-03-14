@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.media_file_scan import MediaFileScan
 from app.models.scan_run import ScanRun
-from app.services.scanner import run_interrogation_scan, run_inventory_scan
+from app.services.scanner import launch_interrogation_scan, launch_inventory_scan
 
 router = APIRouter(prefix="/api/scan", tags=["scan"])
 
@@ -63,7 +63,7 @@ class MediaFileScanRead(BaseModel):
 @router.post("/run", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
 def start_scan(db: Session = Depends(get_db)) -> ScanRun:
     try:
-        return run_inventory_scan(db)
+        return launch_inventory_scan(db)
     except ValueError as config_error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(config_error)) from config_error
 
@@ -71,7 +71,7 @@ def start_scan(db: Session = Depends(get_db)) -> ScanRun:
 @router.post("/run/inventory", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
 def start_inventory_scan(db: Session = Depends(get_db)) -> ScanRun:
     try:
-        return run_inventory_scan(db)
+        return launch_inventory_scan(db)
     except ValueError as config_error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(config_error)) from config_error
 
@@ -79,7 +79,7 @@ def start_inventory_scan(db: Session = Depends(get_db)) -> ScanRun:
 @router.post("/run/interrogation", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
 def start_interrogation_scan(db: Session = Depends(get_db)) -> ScanRun:
     try:
-        return run_interrogation_scan(db)
+        return launch_interrogation_scan(db)
     except ValueError as config_error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(config_error)) from config_error
 

@@ -92,6 +92,8 @@ export function App() {
     scanRunsLoading,
     scanActionLoading,
     scanActionMessage,
+    activeInventoryRun,
+    activeInterrogationRun,
     results,
     resultsLoading,
     resultsFilters,
@@ -188,6 +190,8 @@ export function App() {
     if (activePage === 'scan-jobs') {
       return (
         <ScanJobsPage
+          activeInterrogationRun={activeInterrogationRun}
+          activeInventoryRun={activeInventoryRun}
           scanActionLoading={scanActionLoading}
           scanActionMessage={scanActionMessage}
           scanRuns={scanRuns}
