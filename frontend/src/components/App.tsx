@@ -110,6 +110,10 @@ export function App() {
   } = useScanData({ setError })
 
   const activeQualityProfile = profiles.find((profile) => profile.is_active)
+  const parsedInterrogationWorkers = Number.parseInt(scanSettingsForm['scan.interrogation_workers'] ?? '2', 10)
+  const interrogationWorkers = Number.isFinite(parsedInterrogationWorkers)
+    ? Math.max(1, Math.min(8, parsedInterrogationWorkers))
+    : 2
 
   function handleOpenMappingResults(mappingId: number) {
     void handleApplyResultsFilters({
@@ -222,6 +226,7 @@ export function App() {
         <ScanJobsPage
           activeInterrogationRun={activeInterrogationRun}
           activeInventoryRun={activeInventoryRun}
+          interrogationWorkers={interrogationWorkers}
           scanActionLoading={scanActionLoading}
           scanActionMessage={scanActionMessage}
           scanRuns={scanRuns}

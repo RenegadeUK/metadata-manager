@@ -5,6 +5,7 @@ type ScanJobsPageProps = {
   scanRunsLoading: boolean
   scanActionLoading: boolean
   scanActionMessage: string | null
+  interrogationWorkers: number
   activeInventoryRun?: ScanRun
   activeInterrogationRun?: ScanRun
   onRunInventoryNow: () => void
@@ -17,6 +18,7 @@ export function ScanJobsPage({
   scanRunsLoading,
   scanActionLoading,
   scanActionMessage,
+  interrogationWorkers,
   activeInventoryRun,
   activeInterrogationRun,
   onRunInventoryNow,
@@ -41,6 +43,7 @@ export function ScanJobsPage({
       </div>
       {scanActionMessage ? <p className="success">{scanActionMessage}</p> : null}
       <p className="muted">Live progress refreshes every 2 seconds.</p>
+      <p className="muted">Interrogation workers: {interrogationWorkers}</p>
       {scanRunsLoading ? <p>Loading scan runs...</p> : null}
       {!scanRunsLoading && scanRuns.length === 0 ? <p>No scan runs yet.</p> : null}
       <ul className="item-list">
