@@ -7,6 +7,8 @@ type DashboardPageProps = {
   profilesCount: number
   tagRulesCount: number
   scanRunsCount: number
+  interrogationScheduleLabel: string
+  interrogationScheduleEnabled: boolean
   resultsCount: number
   latestScanAt: string | null
   scanActionLoading: boolean
@@ -30,6 +32,8 @@ export function DashboardPage({
   profilesCount,
   tagRulesCount,
   scanRunsCount,
+  interrogationScheduleLabel,
+  interrogationScheduleEnabled,
   resultsCount,
   latestScanAt,
   scanActionLoading,
@@ -75,6 +79,11 @@ export function DashboardPage({
       label: 'Scan runs',
       value: String(scanRunsCount),
       ok: scanRunsCount > 0,
+    },
+    {
+      label: 'Scheduled interrogation',
+      value: interrogationScheduleLabel,
+      ok: interrogationScheduleEnabled,
     },
     {
       label: 'Cataloged media files',

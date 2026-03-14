@@ -110,6 +110,15 @@ export function App() {
   } = useScanData({ setError })
 
   const activeQualityProfile = profiles.find((profile) => profile.is_active)
+  const interrogationIntervalSeconds = Number.parseInt(
+    scanSettingsForm['scan.interrogation_interval_seconds'] ?? '0',
+    10,
+  )
+  const interrogationScheduleEnabled =
+    Number.isFinite(interrogationIntervalSeconds) && interrogationIntervalSeconds > 0
+  const interrogationScheduleLabel = interrogationScheduleEnabled
+    ? `Every ${interrogationIntervalSeconds}s`
+    : 'Disabled'
 
   function handleOpenMappingResults(mappingId: number) {
     void handleApplyResultsFilters({
@@ -138,6 +147,8 @@ export function App() {
         <DashboardPage
           activeMappingsCount={mappings.filter((mapping) => mapping.is_active).length}
           folderSummary={folderSummary}
+          interrogationScheduleEnabled={interrogationScheduleEnabled}
+          interrogationScheduleLabel={interrogationScheduleLabel}
           latestScanAt={latestRun?.started_at ?? null}
           mappings={mappings}
           missingRequirementsCount={onboardingStatus?.missing_requirements.length ?? 0}
