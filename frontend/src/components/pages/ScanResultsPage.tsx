@@ -55,9 +55,20 @@ export function ScanResultsPage({
 
   const selectedResultDisplay = selectedResult
     ? (() => {
-        const { quality_status, ...rest } = selectedResult
+        const { all_tags_json, quality_status, ...rest } = selectedResult
+        let allTags: unknown = all_tags_json
+
+        if (all_tags_json) {
+          try {
+            allTags = JSON.parse(all_tags_json)
+          } catch {
+            allTags = all_tags_json
+          }
+        }
+
         return {
           ...rest,
+          all_tags: allTags,
           compliance_status: quality_status,
         }
       })()
