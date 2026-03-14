@@ -19,6 +19,7 @@ export type QualityProfile = {
   id: number
   name: string
   is_active: boolean
+  file_format: string | null
   codec: string
   pixel_format: string | null
   min_bitrate_kbps: number | null

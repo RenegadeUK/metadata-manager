@@ -171,7 +171,11 @@ def _probe_media(file_path: Path, timeout_seconds: int) -> dict[str, Any]:
     }
 
 
-def _evaluate_quality(probe_data: dict[str, Any], profile: QualityProfile) -> str:
+def _evaluate_quality(
+    probe_data: dict[str, Any],
+    profile: QualityProfile,
+    file_extension: str | None = None,
+) -> str:
     codec = probe_data.get("codec")
     pixel_format = probe_data.get("pixel_format")
     width = probe_data.get("width")
@@ -184,6 +188,16 @@ def _evaluate_quality(probe_data: dict[str, Any], profile: QualityProfile) -> st
 
     if codec != profile.codec:
         return "below_profile"
+
+    if profile.file_format:
+        allowed_file_formats = {
+            value.strip().lower().lstrip(".")
+            for value in profile.file_format.split(",")
+            if value.strip()
+        }
+        normalized_extension = None if file_extension is None else file_extension.strip().lower().lstrip(".")
+        if normalized_extension is None or normalized_extension not in allowed_file_formats:
+            return "below_profile"
 
     if profile.pixel_format:
         allowed_pixel_formats = {
@@ -546,7 +560,7 @@ def _interrogation_worker(
 
         stat = file_path.stat()
         probe_data = _probe_media(file_path, timeout_seconds)
-        quality_status = _evaluate_quality(probe_data, active_profile)
+        quality_status = _evaluate_quality(probe_data, active_profile, media_row.extension)
         tag_status, tag_value = _evaluate_tag(probe_data, active_tag_rule)
 
         now = datetime.now(timezone.utc)
@@ -753,7 +767,7 @@ def interrogate_scan_result(db: Session, result_id: int) -> MediaFileScan:
 
         stat = file_path.stat()
         probe_data = _probe_media(file_path, timeout_seconds)
-        quality_status = _evaluate_quality(probe_data, active_profile)
+        quality_status = _evaluate_quality(probe_data, active_profile, media_row.extension)
         tag_status, tag_value = _evaluate_tag(probe_data, active_tag_rule)
 
         now = datetime.now(timezone.utc)

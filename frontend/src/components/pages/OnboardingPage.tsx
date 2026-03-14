@@ -426,6 +426,17 @@ export function OnboardingPage({
             />
           </label>
           <label>
+            File format
+            <input
+              placeholder="e.g. mkv,mp4"
+              value={profileForm.file_format ?? ''}
+              onChange={(event) =>
+                setProfileForm((current) => ({ ...current, file_format: event.target.value || null }))
+              }
+            />
+            <small className="muted">Use comma-separated values to allow multiple formats.</small>
+          </label>
+          <label>
             Codec
             <input
               value={profileForm.codec}

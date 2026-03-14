@@ -41,6 +41,7 @@ class FolderMappingRead(FolderMappingPayload):
 class QualityProfilePayload(BaseModel):
     name: str
     is_active: bool = True
+    file_format: str | None = None
     codec: str
     pixel_format: str | None = None
     min_bitrate_kbps: int | None = None
@@ -153,6 +154,7 @@ def get_onboarding_defaults() -> OnboardingDefaults:
         quality_profile=QualityProfilePayload(
             name="Zombie HEVC",
             is_active=True,
+            file_format="mkv",
             codec="hevc",
             pixel_format="p010le",
             min_bitrate_kbps=None,

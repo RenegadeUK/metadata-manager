@@ -11,6 +11,7 @@ export const INITIAL_MAPPING: FolderMappingPayload = {
 export const INITIAL_PROFILE: QualityProfilePayload = {
   name: 'Zombie HEVC',
   is_active: true,
+  file_format: 'mkv',
   codec: 'hevc',
   pixel_format: 'p010le',
   min_bitrate_kbps: null,

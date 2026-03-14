@@ -12,6 +12,7 @@ class QualityProfile(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    file_format: Mapped[str | None] = mapped_column(String(255), nullable=True)
     codec: Mapped[str] = mapped_column(String(100), nullable=False)
     pixel_format: Mapped[str | None] = mapped_column(String(100), nullable=True)
     min_bitrate_kbps: Mapped[int | None] = mapped_column(Integer, nullable=True)

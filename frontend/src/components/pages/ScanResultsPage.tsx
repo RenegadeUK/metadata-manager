@@ -155,6 +155,46 @@ export function ScanResultsPage({
     }
   }
 
+  function getFileFormatBadge(result: MediaFileScanResult) {
+    const expectedFileFormat = activeQualityProfile?.file_format
+    const actualFileFormat = result.extension
+    const normalizedExpectedFileFormats = (expectedFileFormat ?? '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase().replace(/^\./, ''))
+      .filter((value) => value.length > 0)
+    const normalizedActualFileFormat = actualFileFormat?.trim().toLowerCase().replace(/^\./, '')
+
+    if (!expectedFileFormat) {
+      return {
+        label: actualFileFormat ?? 'Unknown',
+        className: 'status-badge status-badge-bad',
+      }
+    }
+
+    if (!actualFileFormat) {
+      return {
+        label: 'Unknown',
+        className: 'status-badge status-badge-bad',
+      }
+    }
+
+    if (
+      normalizedExpectedFileFormats.length > 0 &&
+      normalizedActualFileFormat !== undefined &&
+      normalizedExpectedFileFormats.includes(normalizedActualFileFormat)
+    ) {
+      return {
+        label: actualFileFormat,
+        className: 'status-badge status-badge-ok',
+      }
+    }
+
+    return {
+      label: actualFileFormat,
+      className: 'status-badge status-badge-bad',
+    }
+  }
+
   function getPixelFormatBadge(result: MediaFileScanResult) {
     const expectedPixelFormat = activeQualityProfile?.pixel_format
     const actualPixelFormat = result.pixel_format
@@ -420,6 +460,7 @@ export function ScanResultsPage({
               <tr>
                 <th>File</th>
                 <th>Folder</th>
+                <th>File format</th>
                 <th>Codec</th>
                 <th>Pixel format</th>
                 <th>Resolution</th>
@@ -434,6 +475,7 @@ export function ScanResultsPage({
               {results.map((result) => {
                 const tagBadge = getTagBadge(result)
                 const removalBadge = getRemovalBadge(result)
+                const fileFormatBadge = getFileFormatBadge(result)
                 const codecBadge = getCodecBadge(result)
                 const pixelFormatBadge = getPixelFormatBadge(result)
 
@@ -448,6 +490,9 @@ export function ScanResultsPage({
                         ) : null}
                       </td>
                       <td>{mappingNameById.get(result.folder_mapping_id ?? -1) ?? 'Unmapped'}</td>
+                      <td>
+                        <span className={fileFormatBadge.className}>{fileFormatBadge.label}</span>
+                      </td>
                       <td>
                         <span className={codecBadge.className}>{codecBadge.label}</span>
                       </td>
@@ -490,7 +535,7 @@ export function ScanResultsPage({
                     </tr>
                     {selectedResult?.id === result.id ? (
                       <tr className="results-detail-row">
-                        <td colSpan={9}>
+                        <td colSpan={11}>
                           <div className="results-inline-detail">
                             <div className="list-header">
                               <h3>Result detail #{selectedResult.id}</h3>
