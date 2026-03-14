@@ -43,6 +43,16 @@ export function ScanResultsPage({
 }: ScanResultsPageProps) {
   const [localFilters, setLocalFilters] = useState<ScanResultsFilter>(filters)
 
+  const selectedResultDisplay = selectedResult
+    ? (() => {
+        const { quality_status, ...rest } = selectedResult
+        return {
+          ...rest,
+          compliance_status: quality_status,
+        }
+      })()
+    : null
+
   function formatBitrateMBps(bitrateKbps: number | null | undefined) {
     if (bitrateKbps === null || bitrateKbps === undefined) {
       return '? MB/s'
@@ -291,7 +301,7 @@ export function ScanResultsPage({
                 Close
               </button>
             </div>
-            <pre>{JSON.stringify(selectedResult, null, 2)}</pre>
+            <pre>{JSON.stringify(selectedResultDisplay, null, 2)}</pre>
           </div>
         </div>
       ) : null}
