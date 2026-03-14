@@ -141,6 +141,7 @@ export type ScanResultsFilter = {
 export type FolderScanSummary = {
   folder_mapping_id: number | null
   file_count: number
+  compliant_count: number
 }
 
 type SettingsResponse = {

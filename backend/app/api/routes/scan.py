@@ -2,11 +2,12 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func
+from sqlalchemy import and_, case, func, literal
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.media_file_scan import MediaFileScan
+from app.models.quality_profile import QualityProfile
 from app.models.scan_run import ScanRun
 from app.services.scanner import interrogate_scan_result, launch_interrogation_scan, launch_inventory_scan
 
@@ -64,6 +65,7 @@ class MediaFileScanRead(BaseModel):
 class FolderScanSummaryRead(BaseModel):
     folder_mapping_id: int | None
     file_count: int
+    compliant_count: int
 
 
 @router.post("/run", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
@@ -136,10 +138,27 @@ def list_scan_results(
 
 @router.get("/folder-summary", response_model=list[FolderScanSummaryRead])
 def list_folder_summary(db: Session = Depends(get_db)) -> list[FolderScanSummaryRead]:
+    active_profile = (
+        db.query(QualityProfile)
+        .filter(QualityProfile.is_active.is_(True))
+        .order_by(QualityProfile.id.asc())
+        .first()
+    )
+
+    compliant_condition = literal(False)
+    if active_profile is not None:
+        compliant_condition = MediaFileScan.codec == active_profile.codec
+        if active_profile.pixel_format:
+            compliant_condition = and_(
+                compliant_condition,
+                MediaFileScan.pixel_format == active_profile.pixel_format,
+            )
+
     rows = (
         db.query(
             MediaFileScan.folder_mapping_id.label("folder_mapping_id"),
             func.count(MediaFileScan.id).label("file_count"),
+            func.sum(case((compliant_condition, 1), else_=0)).label("compliant_count"),
         )
         .filter(MediaFileScan.is_removed.is_(False))
         .group_by(MediaFileScan.folder_mapping_id)
@@ -147,7 +166,11 @@ def list_folder_summary(db: Session = Depends(get_db)) -> list[FolderScanSummary
     )
 
     return [
-        FolderScanSummaryRead(folder_mapping_id=row.folder_mapping_id, file_count=row.file_count)
+        FolderScanSummaryRead(
+            folder_mapping_id=row.folder_mapping_id,
+            file_count=row.file_count,
+            compliant_count=int(row.compliant_count or 0),
+        )
         for row in rows
     ]
 

@@ -57,8 +57,16 @@ export function DashboardPage({
   const folderCounts = new Map(
     folderSummary
       .filter((summary) => summary.folder_mapping_id !== null)
-      .map((summary) => [summary.folder_mapping_id as number, summary.file_count]),
+      .map((summary) => [summary.folder_mapping_id as number, summary]),
   )
+
+  function formatCompliancePercent(fileCount: number, compliantCount: number) {
+    if (fileCount <= 0) {
+      return 'n/a compliant'
+    }
+    const percent = Math.round((compliantCount / fileCount) * 100)
+    return `${percent}% compliant`
+  }
 
   const metricCards: MetricCard[] = [
     {
@@ -106,7 +114,17 @@ export function DashboardPage({
       value: String(resultsCount),
       ok: resultsCount > 0,
     },
-  ]
+  ].filter((metricCard) => {
+    if (metricCard.label === 'Onboarding status' && metricCard.ok) {
+      return false
+    }
+
+    if (metricCard.label === 'Missing requirements' && metricCard.value === '0') {
+      return false
+    }
+
+    return true
+  })
 
   return (
     <section className="panel dashboard-panel">
@@ -134,18 +152,27 @@ export function DashboardPage({
         </div>
         <div className="dashboard-folder-grid">
           {mappings.length === 0 ? <p className="muted">No mapped folders yet.</p> : null}
-          {mappings.map((mapping) => (
-            <button
-              className="dashboard-folder-card"
-              key={mapping.id}
-              onClick={() => onOpenMappingResults(mapping.id)}
-              type="button"
-            >
-              <p className="mapping-name">{mapping.name}</p>
-              <p className="mapping-path">{mapping.source_path}</p>
-              <p className="dashboard-folder-count">{folderCounts.get(mapping.id) ?? 0} files</p>
-            </button>
-          ))}
+          {mappings.map((mapping) => {
+            const summary = folderCounts.get(mapping.id)
+            const fileCount = summary?.file_count ?? 0
+            const compliantCount = summary?.compliant_count ?? 0
+
+            return (
+              <button
+                className="dashboard-folder-card"
+                key={mapping.id}
+                onClick={() => onOpenMappingResults(mapping.id)}
+                type="button"
+              >
+                <p className="mapping-name">{mapping.name}</p>
+                <p className="mapping-path">{mapping.source_path}</p>
+                <p className="dashboard-folder-count">{fileCount} files</p>
+                <p className="dashboard-folder-compliance">
+                  {formatCompliancePercent(fileCount, compliantCount)}
+                </p>
+              </button>
+            )
+          })}
         </div>
       </div>
     </section>
