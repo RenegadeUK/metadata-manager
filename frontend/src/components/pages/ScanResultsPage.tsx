@@ -214,14 +214,17 @@ export function ScanResultsPage({
       </ul>
 
       {selectedResult ? (
-        <div className="panel result-detail">
-          <div className="list-header">
-            <h3>Result detail #{selectedResult.id}</h3>
-            <button className="secondary-button" onClick={onClearSelectedResult} type="button">
-              Close
-            </button>
+        <div className="result-detail-overlay" role="dialog" aria-modal="true">
+          <div className="result-detail-backdrop" onClick={onClearSelectedResult} role="presentation" />
+          <div className="panel result-detail-modal">
+            <div className="list-header">
+              <h3>Result detail #{selectedResult.id}</h3>
+              <button className="secondary-button" onClick={onClearSelectedResult} type="button">
+                Close
+              </button>
+            </div>
+            <pre>{JSON.stringify(selectedResult, null, 2)}</pre>
           </div>
-          <pre>{JSON.stringify(selectedResult, null, 2)}</pre>
         </div>
       ) : null}
     </section>

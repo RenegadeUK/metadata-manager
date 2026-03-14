@@ -448,6 +448,29 @@ button {
   word-break: break-word;
 }
 
+.result-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.result-detail-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 8, 12, 0.75);
+}
+
+.result-detail-modal {
+  position: relative;
+  z-index: 1;
+  width: min(1000px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
 .item-list {
   margin: 0;
   padding: 0;
