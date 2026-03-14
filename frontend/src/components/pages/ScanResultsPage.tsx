@@ -184,6 +184,15 @@ export function ScanResultsPage({
     onApplyFilters(localFilters)
   }
 
+  function applyFolderFilter(folderMappingId: number | undefined) {
+    const nextFilters = {
+      ...localFilters,
+      folderMappingId,
+    }
+    setLocalFilters(nextFilters)
+    onApplyFilters(nextFilters)
+  }
+
   return (
     <section className="panel list-panel">
       <div className="list-header">
@@ -200,7 +209,7 @@ export function ScanResultsPage({
               ? 'results-folder-filter results-folder-filter-active'
               : 'results-folder-filter'
           }
-          onClick={() => setLocalFilters((current) => ({ ...current, folderMappingId: undefined }))}
+          onClick={() => applyFolderFilter(undefined)}
           type="button"
         >
           All folders ({folderSummary.reduce((total, row) => total + row.file_count, 0)})
@@ -213,7 +222,7 @@ export function ScanResultsPage({
                 : 'results-folder-filter'
             }
             key={mapping.id}
-            onClick={() => setLocalFilters((current) => ({ ...current, folderMappingId: mapping.id }))}
+            onClick={() => applyFolderFilter(mapping.id)}
             type="button"
           >
             {mapping.name} ({folderCountMap.get(mapping.id) ?? 0})
