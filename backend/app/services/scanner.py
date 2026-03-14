@@ -158,8 +158,15 @@ def _evaluate_quality(probe_data: dict[str, Any], profile: QualityProfile) -> st
     if codec != profile.codec:
         return "below_profile"
 
-    if profile.pixel_format and pixel_format != profile.pixel_format:
-        return "below_profile"
+    if profile.pixel_format:
+        allowed_pixel_formats = {
+            value.strip().lower()
+            for value in profile.pixel_format.split(",")
+            if value.strip()
+        }
+        normalized_pixel_format = None if pixel_format is None else str(pixel_format).strip().lower()
+        if normalized_pixel_format is None or normalized_pixel_format not in allowed_pixel_formats:
+            return "below_profile"
 
     if profile.min_width is not None and isinstance(width, int) and width < profile.min_width:
         return "below_profile"

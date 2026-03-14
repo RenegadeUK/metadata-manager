@@ -438,11 +438,13 @@ export function OnboardingPage({
           <label>
             Pixel format
             <input
+              placeholder="e.g. p010le,yuv420p10le"
               value={profileForm.pixel_format ?? ''}
               onChange={(event) =>
                 setProfileForm((current) => ({ ...current, pixel_format: event.target.value || null }))
               }
             />
+            <small className="muted">Use comma-separated values to allow multiple formats.</small>
           </label>
           <button disabled={onboardingSaving} type="submit">Save profile</button>
           <p className="muted">Configured profiles: {profilesCount}</p>

@@ -17,6 +17,7 @@ type DashboardPageProps = {
   folderSummary: FolderScanSummary[]
   onOpenMappingResults: (mappingId: number) => void
   onRunScanNow: () => void
+  onRunInterrogationNow: () => void
 }
 
 type MetricCard = {
@@ -43,6 +44,7 @@ export function DashboardPage({
   folderSummary,
   onOpenMappingResults,
   onRunScanNow,
+  onRunInterrogationNow,
 }: DashboardPageProps) {
   function formatRunProgress(scanRun?: ScanRun) {
     if (!scanRun || scanRun.status !== 'running') {
@@ -108,9 +110,14 @@ export function DashboardPage({
     <section className="panel dashboard-panel">
       <div className="list-header">
         <h2>Overview</h2>
-        <button onClick={onRunScanNow} disabled={scanActionLoading} type="button">
-          {scanActionLoading ? 'Running...' : 'Run inventory now'}
-        </button>
+        <div className="scan-jobs-actions">
+          <button onClick={onRunScanNow} disabled={scanActionLoading} type="button">
+            {scanActionLoading ? 'Running...' : 'Run inventory now'}
+          </button>
+          <button className="secondary-button" onClick={onRunInterrogationNow} disabled={scanActionLoading} type="button">
+            {scanActionLoading ? 'Running...' : 'Run interrogation now'}
+          </button>
+        </div>
       </div>
       <p className="muted">Latest scan: {latestScanAt ? new Date(latestScanAt).toLocaleString() : 'Never'}</p>
       {scanActionMessage ? <p className="success">{scanActionMessage}</p> : null}

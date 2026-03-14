@@ -119,7 +119,10 @@ export function ScanResultsPage({
   function getPixelFormatBadge(result: MediaFileScanResult) {
     const expectedPixelFormat = activeQualityProfile?.pixel_format
     const actualPixelFormat = result.pixel_format
-    const normalizedExpectedPixelFormat = expectedPixelFormat?.trim().toLowerCase()
+    const normalizedExpectedPixelFormats = (expectedPixelFormat ?? '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0)
     const normalizedActualPixelFormat = actualPixelFormat?.trim().toLowerCase()
 
     if (!expectedPixelFormat) {
@@ -137,9 +140,9 @@ export function ScanResultsPage({
     }
 
     if (
-      normalizedExpectedPixelFormat !== undefined &&
+      normalizedExpectedPixelFormats.length > 0 &&
       normalizedActualPixelFormat !== undefined &&
-      normalizedActualPixelFormat === normalizedExpectedPixelFormat
+      normalizedExpectedPixelFormats.includes(normalizedActualPixelFormat)
     ) {
       return {
         label: `Pixel format: ${actualPixelFormat}`,

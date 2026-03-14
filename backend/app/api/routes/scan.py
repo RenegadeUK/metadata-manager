@@ -149,9 +149,14 @@ def list_folder_summary(db: Session = Depends(get_db)) -> list[FolderScanSummary
     if active_profile is not None:
         compliant_condition = MediaFileScan.codec == active_profile.codec
         if active_profile.pixel_format:
+            allowed_pixel_formats = [
+                value.strip()
+                for value in active_profile.pixel_format.split(",")
+                if value.strip()
+            ]
             compliant_condition = and_(
                 compliant_condition,
-                MediaFileScan.pixel_format == active_profile.pixel_format,
+                MediaFileScan.pixel_format.in_(allowed_pixel_formats),
             )
 
     rows = (

@@ -151,6 +151,7 @@ export function App() {
           scanRunsCount={scanRuns.length}
           tagRulesCount={tagRules.length}
           onOpenMappingResults={handleOpenMappingResults}
+          onRunInterrogationNow={() => void handleRunInterrogationNow()}
           onRunScanNow={() => void handleRunInventoryNow()}
         />
       )
