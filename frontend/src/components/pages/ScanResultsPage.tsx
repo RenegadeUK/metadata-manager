@@ -113,15 +113,15 @@ export function ScanResultsPage({
 
   function getTagBadge(result: MediaFileScanResult) {
     if (result.tag_status === 'tag_match') {
-      return { label: 'Tag: Match', className: 'status-badge status-badge-ok' }
+      return { label: 'Match', className: 'status-badge status-badge-ok' }
     }
     if (result.tag_status === 'tag_mismatch') {
-      return { label: 'Tag: Mismatch', className: 'status-badge status-badge-bad' }
+      return { label: 'Mismatch', className: 'status-badge status-badge-bad' }
     }
     if (result.tag_status === 'missing_tag') {
-      return { label: 'Tag: Missing', className: 'status-badge status-badge-bad' }
+      return { label: 'Missing', className: 'status-badge status-badge-bad' }
     }
-    return { label: 'Tag: Unknown', className: 'status-badge status-badge-bad' }
+    return { label: 'Unknown', className: 'status-badge status-badge-bad' }
   }
 
   function getRemovalBadge(result: MediaFileScanResult) {
