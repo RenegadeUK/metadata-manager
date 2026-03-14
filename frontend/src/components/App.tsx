@@ -23,7 +23,7 @@ const PAGE_LABELS: Record<AppPage, string> = {
 
 const PAGE_DESCRIPTIONS: Record<AppPage, string> = {
   dashboard: 'Operational overview of setup readiness and latest scan activity.',
-  onboarding: 'Set folder mappings, quality profiles, tag rules, and scan settings.',
+  onboarding: 'Set folder mappings, compliance profiles, tag rules, and scan settings.',
   runtime: 'Manage persisted runtime values written to /config/.env.',
   'scan-jobs': 'Run scans and inspect execution history.',
   'scan-results': 'Filter and interrogate discovered media scan results.',

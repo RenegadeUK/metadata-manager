@@ -38,7 +38,7 @@ export function useProfileTagManagement({
     try {
       const created = await createQualityProfile(profileForm)
       setProfiles((currentProfiles) => [...currentProfiles, created])
-      setOnboardingMessage('Quality profile saved.')
+      setOnboardingMessage('Compliance profile saved.')
       await refreshOnboardingStatus()
     } catch (profileError) {
       setError(profileError instanceof Error ? profileError.message : 'Unexpected error')

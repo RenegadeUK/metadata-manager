@@ -62,7 +62,7 @@ export function DashboardPage({
       ok: activeMappingsCount > 0,
     },
     {
-      label: 'Quality profiles',
+      label: 'Compliance profiles',
       value: String(profilesCount),
       ok: profilesCount > 0,
     },

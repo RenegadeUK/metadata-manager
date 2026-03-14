@@ -103,7 +103,7 @@ export function OnboardingPage({
 
   const tabLabels: Record<OnboardingTab, string> = {
     folders: 'Folders',
-    quality: 'Quality',
+    quality: 'Compliance',
     tags: 'Tags',
     scan: 'Scan',
   }
@@ -414,7 +414,7 @@ export function OnboardingPage({
 
       {activeTab === 'quality' ? (
         <form className="composer" onSubmit={onCreateProfile}>
-          <h3>Quality profile</h3>
+          <h3>Compliance profile</h3>
           <label>
             Name
             <input
