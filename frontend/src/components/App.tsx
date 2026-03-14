@@ -144,6 +144,18 @@ export function App() {
     return () => window.clearTimeout(timeoutId)
   }, [mappingFeedback])
 
+  useEffect(() => {
+    if (!onboardingMessage) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setOnboardingMessage((current) => (current === onboardingMessage ? null : current))
+    }, 3000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [onboardingMessage])
+
   async function loadItems() {
     setLoading(true)
     setError(null)
