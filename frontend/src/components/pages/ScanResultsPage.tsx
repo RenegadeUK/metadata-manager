@@ -207,6 +207,7 @@ export function ScanResultsPage({
               <p>
                 {result.extension} · {result.codec ?? 'n/a'} · {result.width ?? '?'}x{result.height ?? '?'} · {result.bitrate_kbps ?? '?'} kbps
               </p>
+              {result.probe_error ? <p className="error">Probe error: {result.probe_error}</p> : null}
             </li>
           )
         })}

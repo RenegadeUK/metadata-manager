@@ -17,6 +17,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
         curl \
+        ffmpeg \
         gosu \
         postgresql-15 \
         postgresql-client-15 \
