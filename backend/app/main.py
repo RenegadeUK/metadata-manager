@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import api_router
 from app.core.config import get_settings
+from app.services.inventory_scheduler import start_inventory_scheduler, stop_inventory_scheduler
 
 settings = get_settings()
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -20,6 +21,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    start_inventory_scheduler()
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    await stop_inventory_scheduler()
 
 if FRONTEND_DIST.exists():
     app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")

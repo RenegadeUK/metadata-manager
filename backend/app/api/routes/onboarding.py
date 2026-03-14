@@ -17,6 +17,8 @@ DEFAULT_SCAN_SETTINGS = {
     "scan.include_extensions": "mp4,mkv,mov,m4v,avi,webm",
     "scan.exclude_patterns": "",
     "scan.ffprobe_timeout_seconds": "30",
+    "scan.hard_delete_after_days": "14",
+    "scan.inventory_interval_seconds": "3600",
 }
 
 
@@ -70,6 +72,8 @@ class ScanSettingsPayload(BaseModel):
     include_extensions: str = Field(alias="scan.include_extensions")
     exclude_patterns: str = Field(alias="scan.exclude_patterns")
     ffprobe_timeout_seconds: str = Field(alias="scan.ffprobe_timeout_seconds")
+    hard_delete_after_days: str = Field(alias="scan.hard_delete_after_days")
+    inventory_interval_seconds: str = Field(alias="scan.inventory_interval_seconds")
 
     model_config = {"populate_by_name": True}
 

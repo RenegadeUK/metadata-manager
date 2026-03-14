@@ -45,6 +45,8 @@ export type ScanSettings = {
   'scan.include_extensions': string
   'scan.exclude_patterns': string
   'scan.ffprobe_timeout_seconds': string
+  'scan.hard_delete_after_days': string
+  'scan.inventory_interval_seconds': string
 }
 
 export type OnboardingStatus = {
@@ -77,6 +79,60 @@ export type AppSettings = {
   POSTGRES_DB: string
   POSTGRES_USER: string
   POSTGRES_PASSWORD: string
+}
+
+export type ScanRun = {
+  id: number
+  run_type: string
+  status: string
+  total_files: number
+  processed_files: number
+  new_files: number
+  updated_files: number
+  error_files: number
+  message: string | null
+  started_at: string
+  ended_at: string | null
+}
+
+export type MediaFileScanResult = {
+  id: number
+  file_path: string
+  file_name: string
+  extension: string
+  device_id: number | null
+  inode: number | null
+  folder_mapping_id: number | null
+  scan_run_id: number | null
+  size_bytes: number | null
+  modified_at: string | null
+  codec: string | null
+  pixel_format: string | null
+  width: number | null
+  height: number | null
+  bitrate_kbps: number | null
+  video_profile: string | null
+  tag_key: string | null
+  tag_value: string | null
+  quality_status: string
+  tag_status: string
+  probe_error: string | null
+  is_removed: boolean
+  removed_at: string | null
+  last_seen_at: string | null
+  inventory_scanned_at: string | null
+  interrogated_at: string | null
+  scanned_at: string
+}
+
+export type ScanResultsFilter = {
+  pathQuery?: string
+  extension?: string
+  qualityStatus?: string
+  tagStatus?: string
+  removed?: boolean
+  limit?: number
+  offset?: number
 }
 
 type SettingsResponse = {
@@ -266,6 +322,66 @@ export async function saveScanSettings(payload: ScanSettings): Promise<ScanSetti
   })
   if (!response.ok) {
     throw new Error(`Failed to save scan settings: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function startScan(): Promise<ScanRun> {
+  return startInventoryScan()
+}
+
+export async function startInventoryScan(): Promise<ScanRun> {
+  const response = await fetch(`${API_BASE}/api/scan/run`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to start inventory scan: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function startInterrogationScan(): Promise<ScanRun> {
+  const response = await fetch(`${API_BASE}/api/scan/run/interrogation`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to start interrogation scan: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchScanRuns(): Promise<ScanRun[]> {
+  const response = await fetch(`${API_BASE}/api/scan/runs`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch scan runs: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchScanResults(
+  filters: ScanResultsFilter = {},
+): Promise<MediaFileScanResult[]> {
+  const params = new URLSearchParams()
+  if (filters.pathQuery) params.set('path_query', filters.pathQuery)
+  if (filters.extension) params.set('extension', filters.extension)
+  if (filters.qualityStatus) params.set('quality_status', filters.qualityStatus)
+  if (filters.tagStatus) params.set('tag_status', filters.tagStatus)
+  if (filters.removed !== undefined) params.set('removed', String(filters.removed))
+  params.set('limit', String(filters.limit ?? 200))
+  params.set('offset', String(filters.offset ?? 0))
+
+  const query = params.toString()
+  const response = await fetch(`${API_BASE}/api/scan/results${query ? `?${query}` : ''}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch scan results: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchScanResult(resultId: number): Promise<MediaFileScanResult> {
+  const response = await fetch(`${API_BASE}/api/scan/results/${resultId}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch scan result: ${response.status}`)
   }
   return response.json()
 }

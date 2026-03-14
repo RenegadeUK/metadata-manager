@@ -528,6 +528,32 @@ export function OnboardingPage({
               required
             />
           </label>
+          <label>
+            Hard delete after days
+            <input
+              value={scanSettingsForm['scan.hard_delete_after_days']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.hard_delete_after_days': event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
+          <label>
+            Inventory interval seconds (0 disables scheduler)
+            <input
+              value={scanSettingsForm['scan.inventory_interval_seconds']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.inventory_interval_seconds': event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
           <button disabled={onboardingSaving} type="submit">Save scan settings</button>
         </form>
       ) : null}

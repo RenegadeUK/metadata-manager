@@ -315,6 +315,29 @@ button {
   gap: 12px;
 }
 
+.scan-jobs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.results-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.result-detail {
+  margin-top: 8px;
+}
+
+.result-detail pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .item-list {
   margin: 0;
   padding: 0;

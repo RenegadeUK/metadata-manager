@@ -32,6 +32,8 @@ export const INITIAL_SCAN_SETTINGS: ScanSettings = {
   'scan.include_extensions': 'mp4,mkv,mov,m4v,avi,webm',
   'scan.exclude_patterns': '',
   'scan.ffprobe_timeout_seconds': '30',
+  'scan.hard_delete_after_days': '14',
+  'scan.inventory_interval_seconds': '3600',
 }
 
 export const SUCCESS_MESSAGE_TIMEOUT_MS = 3000

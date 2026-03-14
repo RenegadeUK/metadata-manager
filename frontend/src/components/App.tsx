@@ -3,13 +3,13 @@ import { useState } from 'react'
 import { PageHeader } from './layout/PageHeader'
 import { SidebarNav } from './layout/SidebarNav'
 import { DashboardPage } from './pages/DashboardPage'
-import { ItemsPage } from './pages/ItemsPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { RuntimeSettingsPage } from './pages/RuntimeSettingsPage'
-import { SeedDataPage } from './pages/SeedDataPage'
-import { useItems } from '../hooks/useItems'
+import { ScanJobsPage } from './pages/ScanJobsPage'
+import { ScanResultsPage } from './pages/ScanResultsPage'
 import { useOnboarding } from '../hooks/useOnboarding'
 import { useRuntimeSettings } from '../hooks/useRuntimeSettings'
+import { useScanData } from '../hooks/useScanData'
 import { type AppPage } from './types'
 import '../styles/app.css'
 
@@ -17,36 +17,24 @@ const PAGE_LABELS: Record<AppPage, string> = {
   dashboard: 'Dashboard',
   onboarding: 'Onboarding',
   runtime: 'Runtime settings',
-  seed: 'Seed data',
-  items: 'Items',
+  'scan-jobs': 'Scan jobs',
+  'scan-results': 'Scan results',
 }
 
 const PAGE_DESCRIPTIONS: Record<AppPage, string> = {
-  dashboard: 'Operational overview of setup readiness and core metric levels.',
+  dashboard: 'Operational overview of setup readiness and latest scan activity.',
   onboarding: 'Set folder mappings, quality profiles, tag rules, and scan settings.',
   runtime: 'Manage persisted runtime values written to /config/.env.',
-  seed: 'Create seed records for quick API validation.',
-  items: 'Browse and refresh stored records.',
+  'scan-jobs': 'Run scans and inspect execution history.',
+  'scan-results': 'Filter and interrogate discovered media scan results.',
 }
 
-const APP_PAGES: AppPage[] = ['dashboard', 'onboarding', 'runtime', 'seed', 'items']
+const APP_PAGES: AppPage[] = ['dashboard', 'onboarding', 'runtime', 'scan-jobs', 'scan-results']
 
 export function App() {
   const restartCommand = 'docker compose restart app'
   const [activePage, setActivePage] = useState<AppPage>('dashboard')
   const [error, setError] = useState<string | null>(null)
-
-  const {
-    items,
-    name,
-    description,
-    loading,
-    saving,
-    setName,
-    setDescription,
-    loadItems,
-    handleSubmit,
-  } = useItems({ setError })
 
   const {
     settings,
@@ -99,16 +87,40 @@ export function App() {
     handleUseBrowsedPath,
   } = useOnboarding({ setError })
 
+  const {
+    scanRuns,
+    scanRunsLoading,
+    scanActionLoading,
+    scanActionMessage,
+    results,
+    resultsLoading,
+    resultsFilters,
+    selectedResult,
+    setSelectedResult,
+    loadScanRuns,
+    loadResults,
+    handleRunInventoryNow,
+    handleRunInterrogationNow,
+    handleApplyResultsFilters,
+    handleOpenResultDetail,
+  } = useScanData({ setError })
+
   function renderPage() {
     if (activePage === 'dashboard') {
+      const latestRun = scanRuns[0]
       return (
         <DashboardPage
           activeMappingsCount={mappings.filter((mapping) => mapping.is_active).length}
-          itemsCount={items.length}
+          latestScanAt={latestRun?.started_at ?? null}
           missingRequirementsCount={onboardingStatus?.missing_requirements.length ?? 0}
           onboardingReady={onboardingStatus?.ready ?? false}
           profilesCount={profiles.length}
+          resultsCount={results.length}
+          scanActionLoading={scanActionLoading}
+          scanActionMessage={scanActionMessage}
+          scanRunsCount={scanRuns.length}
           tagRulesCount={tagRules.length}
+          onRunScanNow={() => void handleRunInventoryNow()}
         />
       )
     }
@@ -173,20 +185,32 @@ export function App() {
       )
     }
 
-    if (activePage === 'seed') {
+    if (activePage === 'scan-jobs') {
       return (
-        <SeedDataPage
-          description={description}
-          name={name}
-          onSetDescription={setDescription}
-          onSetName={setName}
-          onSubmit={handleSubmit}
-          saving={saving}
+        <ScanJobsPage
+          scanActionLoading={scanActionLoading}
+          scanActionMessage={scanActionMessage}
+          scanRuns={scanRuns}
+          scanRunsLoading={scanRunsLoading}
+          onRefreshRuns={() => void loadScanRuns()}
+          onRunInventoryNow={() => void handleRunInventoryNow()}
+          onRunInterrogationNow={() => void handleRunInterrogationNow()}
         />
       )
     }
 
-    return <ItemsPage items={items} loading={loading} onRefresh={() => void loadItems()} />
+    return (
+      <ScanResultsPage
+        filters={resultsFilters}
+        results={results}
+        resultsLoading={resultsLoading}
+        selectedResult={selectedResult}
+        onApplyFilters={(filters) => void handleApplyResultsFilters(filters)}
+        onClearSelectedResult={() => setSelectedResult(null)}
+        onRefresh={() => void loadResults()}
+        onSelectResult={(resultId) => void handleOpenResultDetail(resultId)}
+      />
+    )
   }
 
   return (
