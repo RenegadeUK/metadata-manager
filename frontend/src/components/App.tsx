@@ -71,6 +71,10 @@ export function App() {
     editingMappingId,
     editingMappingForm,
     mappingFeedback,
+    mediaDirectoryBrowser,
+    mediaBrowserOpen,
+    mediaBrowserLoading,
+    mediaBrowserError,
     setMappingForm,
     setProfileForm,
     setTagRuleForm,
@@ -86,6 +90,10 @@ export function App() {
     handleCreateProfile,
     handleCreateTagRule,
     handleSaveScanSettings,
+    handleOpenMediaBrowser,
+    handleCloseMediaBrowser,
+    handleBrowseMediaPath,
+    handleUseBrowsedPath,
   } = useOnboarding({ setError })
 
   function renderPage() {
@@ -95,6 +103,10 @@ export function App() {
           editingMappingForm={editingMappingForm}
           editingMappingId={editingMappingId}
           mappingFeedback={mappingFeedback}
+          mediaBrowserError={mediaBrowserError}
+          mediaBrowserLoading={mediaBrowserLoading}
+          mediaBrowserOpen={mediaBrowserOpen}
+          mediaDirectoryBrowser={mediaDirectoryBrowser}
           mappingForm={mappingForm}
           mappings={mappings}
           onboardingMessage={onboardingMessage}
@@ -105,11 +117,15 @@ export function App() {
           onCreateProfile={handleCreateProfile}
           onCreateTagRule={handleCreateTagRule}
           onDeleteMapping={(mappingId) => void handleDeleteMapping(mappingId)}
+          onBrowseMediaPath={(path) => void handleBrowseMediaPath(path)}
+          onCloseMediaBrowser={handleCloseMediaBrowser}
+          onOpenMediaBrowser={() => void handleOpenMediaBrowser()}
           onReload={() => void loadOnboardingState()}
           onSaveMappingEdit={(event, mappingId) => void handleSaveMappingEdit(event, mappingId)}
           onSaveScanSettings={handleSaveScanSettings}
           onStartMappingEdit={handleStartMappingEdit}
           onToggleMappingActive={(mapping) => void handleToggleMappingActive(mapping)}
+          onUseBrowsedPath={handleUseBrowsedPath}
           profileForm={profileForm}
           profilesCount={profiles.length}
           scanSettingsForm={scanSettingsForm}

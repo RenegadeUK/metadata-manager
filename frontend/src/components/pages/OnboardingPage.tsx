@@ -3,6 +3,7 @@ import { type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import {
   type FolderMapping,
   type FolderMappingPayload,
+  type MediaDirectoryBrowserResponse,
   type MetadataTagRulePayload,
   type OnboardingStatus,
   type QualityProfilePayload,
@@ -24,6 +25,10 @@ type OnboardingPageProps = {
   mappingFeedback: MappingFeedback | null
   profilesCount: number
   tagRulesCount: number
+  mediaDirectoryBrowser: MediaDirectoryBrowserResponse | null
+  mediaBrowserOpen: boolean
+  mediaBrowserLoading: boolean
+  mediaBrowserError: string | null
   onReload: () => void
   onCreateMapping: (event: FormEvent<HTMLFormElement>) => void
   onCreateProfile: (event: FormEvent<HTMLFormElement>) => void
@@ -34,6 +39,10 @@ type OnboardingPageProps = {
   onSaveMappingEdit: (event: FormEvent<HTMLFormElement>, mappingId: number) => void
   onToggleMappingActive: (mapping: FolderMapping) => void
   onDeleteMapping: (mappingId: number) => void
+  onOpenMediaBrowser: () => void
+  onCloseMediaBrowser: () => void
+  onBrowseMediaPath: (path: string) => void
+  onUseBrowsedPath: (path: string) => void
   setMappingForm: Dispatch<SetStateAction<FolderMappingPayload>>
   setProfileForm: Dispatch<SetStateAction<QualityProfilePayload>>
   setTagRuleForm: Dispatch<SetStateAction<MetadataTagRulePayload>>
@@ -55,6 +64,10 @@ export function OnboardingPage({
   mappingFeedback,
   profilesCount,
   tagRulesCount,
+  mediaDirectoryBrowser,
+  mediaBrowserOpen,
+  mediaBrowserLoading,
+  mediaBrowserError,
   onReload,
   onCreateMapping,
   onCreateProfile,
@@ -65,6 +78,10 @@ export function OnboardingPage({
   onSaveMappingEdit,
   onToggleMappingActive,
   onDeleteMapping,
+  onOpenMediaBrowser,
+  onCloseMediaBrowser,
+  onBrowseMediaPath,
+  onUseBrowsedPath,
   setMappingForm,
   setProfileForm,
   setTagRuleForm,
@@ -105,14 +122,82 @@ export function OnboardingPage({
         </label>
         <label>
           Source path
-          <input
-            value={mappingForm.source_path}
-            onChange={(event) =>
-              setMappingForm((current) => ({ ...current, source_path: event.target.value }))
-            }
-            required
-          />
+          <div className="source-path-row">
+            <input
+              value={mappingForm.source_path}
+              onChange={(event) =>
+                setMappingForm((current) => ({ ...current, source_path: event.target.value }))
+              }
+              required
+            />
+            <button className="secondary-button" onClick={onOpenMediaBrowser} type="button">
+              Browse
+            </button>
+          </div>
         </label>
+        {mediaBrowserOpen ? (
+          <div className="media-browser">
+            <div className="media-browser-toolbar">
+              <button
+                className="secondary-button"
+                disabled={mediaBrowserLoading}
+                onClick={() => {
+                  const parent = mediaDirectoryBrowser?.parent_path
+                  if (parent) {
+                    onBrowseMediaPath(parent)
+                  }
+                }}
+                type="button"
+              >
+                Up
+              </button>
+              <button
+                className="secondary-button"
+                disabled={mediaBrowserLoading}
+                onClick={() =>
+                  onBrowseMediaPath(mediaDirectoryBrowser?.current_path ?? mappingForm.source_path)
+                }
+                type="button"
+              >
+                Refresh
+              </button>
+              <button
+                className="secondary-button"
+                disabled={!mediaDirectoryBrowser}
+                onClick={() => {
+                  if (mediaDirectoryBrowser) {
+                    onUseBrowsedPath(mediaDirectoryBrowser.current_path)
+                  }
+                }}
+                type="button"
+              >
+                Use current
+              </button>
+              <button className="secondary-button" onClick={onCloseMediaBrowser} type="button">
+                Close
+              </button>
+            </div>
+            <p className="muted">
+              Current: {mediaDirectoryBrowser?.current_path ?? mappingForm.source_path}
+            </p>
+            {mediaBrowserLoading ? <p className="muted">Loading directories...</p> : null}
+            {mediaBrowserError ? <p className="error">{mediaBrowserError}</p> : null}
+            <ul className="media-browser-list">
+              {(mediaDirectoryBrowser?.directories ?? []).map((directory) => (
+                <li key={directory.path}>
+                  <button
+                    className="secondary-button"
+                    onClick={() => onBrowseMediaPath(directory.path)}
+                    type="button"
+                  >
+                    {directory.name}
+                    {directory.has_children ? ' /' : ''}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <label>
           Notes
           <input

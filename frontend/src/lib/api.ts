@@ -57,6 +57,18 @@ export type OnboardingDefaults = {
   metadata_tag_rule: MetadataTagRulePayload
 }
 
+export type MediaDirectory = {
+  name: string
+  path: string
+  has_children: boolean
+}
+
+export type MediaDirectoryBrowserResponse = {
+  current_path: string
+  parent_path: string | null
+  directories: MediaDirectory[]
+}
+
 export type AppSettings = {
   APP_NAME: string
   APP_ENV: string
@@ -231,6 +243,17 @@ export async function fetchScanSettings(): Promise<ScanSettings> {
   const response = await fetch(`${API_BASE}/api/onboarding/scan-settings`)
   if (!response.ok) {
     throw new Error(`Failed to fetch scan settings: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchMediaDirectories(
+  path?: string,
+): Promise<MediaDirectoryBrowserResponse> {
+  const query = path ? `?path=${encodeURIComponent(path)}` : ''
+  const response = await fetch(`${API_BASE}/api/onboarding/media-directories${query}`)
+  if (!response.ok) {
+    throw new Error(`Failed to browse media directories: ${response.status}`)
   }
   return response.json()
 }

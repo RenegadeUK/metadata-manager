@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.models.app_setting import AppSetting
 from app.models.folder_mapping import FolderMapping
@@ -81,6 +84,18 @@ class OnboardingDefaults(BaseModel):
     metadata_tag_rule: MetadataTagRulePayload
 
 
+class MediaDirectoryRead(BaseModel):
+    name: str
+    path: str
+    has_children: bool
+
+
+class MediaDirectoryBrowserResponse(BaseModel):
+    current_path: str
+    parent_path: str | None
+    directories: list[MediaDirectoryRead]
+
+
 def _upsert_setting(db: Session, key: str, value: str) -> None:
     setting = db.query(AppSetting).filter(AppSetting.key == key).one_or_none()
     if setting is None:
@@ -88,6 +103,21 @@ def _upsert_setting(db: Session, key: str, value: str) -> None:
         db.add(setting)
     else:
         setting.value = value
+
+
+def _is_within_path(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _has_child_directories(path: Path) -> bool:
+    try:
+        return any(child.is_dir() for child in path.iterdir())
+    except OSError:
+        return False
 
 
 @router.get("/status", response_model=OnboardingStatus)
@@ -130,6 +160,49 @@ def get_onboarding_defaults() -> OnboardingDefaults:
             tag_value="zombie",
             match_mode="exact",
         ),
+    )
+
+
+@router.get("/media-directories", response_model=MediaDirectoryBrowserResponse)
+def browse_media_directories(path: str | None = Query(default=None)) -> MediaDirectoryBrowserResponse:
+    settings = get_settings()
+    media_root = settings.media_dir.resolve()
+    requested_path = media_root if path is None else Path(path).resolve()
+
+    if not _is_within_path(requested_path, media_root):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Path must be inside media root",
+        )
+
+    if not requested_path.exists() or not requested_path.is_dir():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Directory not found",
+        )
+
+    directories: list[MediaDirectoryRead] = []
+    for child in sorted(requested_path.iterdir(), key=lambda entry: entry.name.lower()):
+        if not child.is_dir():
+            continue
+        directories.append(
+            MediaDirectoryRead(
+                name=child.name,
+                path=str(child),
+                has_children=_has_child_directories(child),
+            )
+        )
+
+    parent_path: str | None = None
+    if requested_path != media_root:
+        parent = requested_path.parent
+        if _is_within_path(parent, media_root):
+            parent_path = str(parent)
+
+    return MediaDirectoryBrowserResponse(
+        current_path=str(requested_path),
+        parent_path=parent_path,
+        directories=directories,
     )
 
 

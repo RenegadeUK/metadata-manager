@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import {
+  fetchMediaDirectories,
   fetchFolderMappings,
   fetchMetadataTagRules,
   fetchOnboardingDefaults,
@@ -15,6 +16,7 @@ import {
   type QualityProfile,
   type QualityProfilePayload,
   type ScanSettings,
+  type MediaDirectoryBrowserResponse,
 } from '../lib/api'
 import { type MappingFeedback } from '../components/types'
 import {
@@ -46,6 +48,11 @@ export function useOnboarding({ setError }: UseOnboardingArgs) {
   const [editingMappingId, setEditingMappingId] = useState<number | null>(null)
   const [editingMappingForm, setEditingMappingForm] = useState<FolderMappingPayload | null>(null)
   const [mappingFeedback, setMappingFeedback] = useState<MappingFeedback | null>(null)
+  const [mediaDirectoryBrowser, setMediaDirectoryBrowser] =
+    useState<MediaDirectoryBrowserResponse | null>(null)
+  const [mediaBrowserOpen, setMediaBrowserOpen] = useState(false)
+  const [mediaBrowserLoading, setMediaBrowserLoading] = useState(false)
+  const [mediaBrowserError, setMediaBrowserError] = useState<string | null>(null)
 
   useOnboardingMessages({
     onboardingMessage,
@@ -85,6 +92,38 @@ export function useOnboarding({ setError }: UseOnboardingArgs) {
   useEffect(() => {
     void loadOnboardingState()
   }, [])
+
+  async function loadMediaDirectories(path?: string) {
+    setMediaBrowserLoading(true)
+    setMediaBrowserError(null)
+    try {
+      const response = await fetchMediaDirectories(path)
+      setMediaDirectoryBrowser(response)
+    } catch (browserError) {
+      setMediaBrowserError(browserError instanceof Error ? browserError.message : 'Unexpected error')
+    } finally {
+      setMediaBrowserLoading(false)
+    }
+  }
+
+  async function handleOpenMediaBrowser() {
+    const requestedPath = mappingForm.source_path?.trim() || undefined
+    await loadMediaDirectories(requestedPath)
+    setMediaBrowserOpen(true)
+  }
+
+  function handleCloseMediaBrowser() {
+    setMediaBrowserOpen(false)
+    setMediaBrowserError(null)
+  }
+
+  async function handleBrowseMediaPath(path: string) {
+    await loadMediaDirectories(path)
+  }
+
+  function handleUseBrowsedPath(path: string) {
+    setMappingForm((current) => ({ ...current, source_path: path }))
+  }
 
   const {
     handleCreateMapping,
@@ -140,12 +179,21 @@ export function useOnboarding({ setError }: UseOnboardingArgs) {
     editingMappingId,
     editingMappingForm,
     mappingFeedback,
+    mediaDirectoryBrowser,
+    mediaBrowserOpen,
+    mediaBrowserLoading,
+    mediaBrowserError,
     setMappingForm,
     setProfileForm,
     setTagRuleForm,
     setScanSettingsForm,
     setEditingMappingForm,
     loadOnboardingState,
+    loadMediaDirectories,
+    handleOpenMediaBrowser,
+    handleCloseMediaBrowser,
+    handleBrowseMediaPath,
+    handleUseBrowsedPath,
     handleCreateMapping,
     handleToggleMappingActive,
     handleDeleteMapping,
