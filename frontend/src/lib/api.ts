@@ -298,6 +298,21 @@ export async function createQualityProfile(payload: QualityProfilePayload): Prom
   return response.json()
 }
 
+export async function updateQualityProfile(
+  profileId: number,
+  payload: QualityProfilePayload,
+): Promise<QualityProfile> {
+  const response = await fetch(`${API_BASE}/api/onboarding/quality-profiles/${profileId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to update quality profile: ${response.status}`)
+  }
+  return response.json()
+}
+
 export async function fetchMetadataTagRules(): Promise<MetadataTagRule[]> {
   const response = await fetch(`${API_BASE}/api/onboarding/metadata-tag-rules`)
   if (!response.ok) {
@@ -316,6 +331,21 @@ export async function createMetadataTagRule(
   })
   if (!response.ok) {
     throw new Error(`Failed to create metadata tag rule: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function updateMetadataTagRule(
+  ruleId: number,
+  payload: MetadataTagRulePayload,
+): Promise<MetadataTagRule> {
+  const response = await fetch(`${API_BASE}/api/onboarding/metadata-tag-rules/${ruleId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to update metadata tag rule: ${response.status}`)
   }
   return response.json()
 }

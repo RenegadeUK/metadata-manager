@@ -517,7 +517,13 @@ button {
 .results-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   min-width: 1100px;
+}
+
+.results-table th:first-child,
+.results-table td:first-child {
+  width: 44%;
 }
 
 .results-table th,
@@ -595,11 +601,14 @@ button {
   margin: 0;
   color: #f4efe5;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .results-file-path {
   margin: 6px 0 0;
   color: #c0c8cd;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 

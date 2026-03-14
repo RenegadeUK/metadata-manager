@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -289,9 +290,30 @@ def list_quality_profiles(db: Session = Depends(get_db)) -> list[QualityProfile]
 
 @router.post("/quality-profiles", response_model=QualityProfileRead, status_code=status.HTTP_201_CREATED)
 def create_quality_profile(payload: QualityProfilePayload, db: Session = Depends(get_db)) -> QualityProfile:
-    profile = QualityProfile(**payload.model_dump())
+    normalized_name = payload.name.strip()
+    existing_profile = (
+        db.query(QualityProfile)
+        .filter(QualityProfile.name == normalized_name)
+        .first()
+    )
+    if existing_profile is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quality profile name already exists",
+        )
+
+    profile_data = payload.model_dump()
+    profile_data["name"] = normalized_name
+    profile = QualityProfile(**profile_data)
     db.add(profile)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quality profile name already exists",
+        ) from error
     db.refresh(profile)
     return profile
 
@@ -304,10 +326,31 @@ def update_quality_profile(
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quality profile not found")
 
-    for key, value in payload.model_dump().items():
+    normalized_name = payload.name.strip()
+    existing_profile = (
+        db.query(QualityProfile)
+        .filter(QualityProfile.name == normalized_name, QualityProfile.id != profile_id)
+        .first()
+    )
+    if existing_profile is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quality profile name already exists",
+        )
+
+    payload_data = payload.model_dump()
+    payload_data["name"] = normalized_name
+    for key, value in payload_data.items():
         setattr(profile, key, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Quality profile name already exists",
+        ) from error
     db.refresh(profile)
     return profile
 
@@ -331,9 +374,30 @@ def list_metadata_tag_rules(db: Session = Depends(get_db)) -> list[MetadataTagRu
 def create_metadata_tag_rule(
     payload: MetadataTagRulePayload, db: Session = Depends(get_db)
 ) -> MetadataTagRule:
-    rule = MetadataTagRule(**payload.model_dump())
+    normalized_name = payload.name.strip()
+    existing_rule = (
+        db.query(MetadataTagRule)
+        .filter(MetadataTagRule.name == normalized_name)
+        .first()
+    )
+    if existing_rule is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Metadata tag rule name already exists",
+        )
+
+    rule_data = payload.model_dump()
+    rule_data["name"] = normalized_name
+    rule = MetadataTagRule(**rule_data)
     db.add(rule)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Metadata tag rule name already exists",
+        ) from error
     db.refresh(rule)
     return rule
 
@@ -346,10 +410,31 @@ def update_metadata_tag_rule(
     if rule is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Metadata tag rule not found")
 
-    for key, value in payload.model_dump().items():
+    normalized_name = payload.name.strip()
+    existing_rule = (
+        db.query(MetadataTagRule)
+        .filter(MetadataTagRule.name == normalized_name, MetadataTagRule.id != rule_id)
+        .first()
+    )
+    if existing_rule is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Metadata tag rule name already exists",
+        )
+
+    payload_data = payload.model_dump()
+    payload_data["name"] = normalized_name
+    for key, value in payload_data.items():
         setattr(rule, key, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Metadata tag rule name already exists",
+        ) from error
     db.refresh(rule)
     return rule
 

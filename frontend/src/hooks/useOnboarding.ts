@@ -148,7 +148,9 @@ export function useOnboarding({ setError }: UseOnboardingArgs) {
 
   const { handleCreateProfile, handleCreateTagRule } = useProfileTagManagement({
     profileForm,
+    profiles,
     tagRuleForm,
+    tagRules,
     setProfiles,
     setTagRules,
     setOnboardingSaving,
