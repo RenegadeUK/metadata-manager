@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 
 import {
   type FolderScanSummary,
@@ -118,20 +118,20 @@ export function ScanResultsPage({
 
     if (!expectedCodec || !actualCodec) {
       return {
-        label: `Codec: ${actualCodec ?? 'Unknown'}`,
+        label: actualCodec ?? 'Unknown',
         className: 'status-badge status-badge-bad',
       }
     }
 
     if (actualCodec === expectedCodec) {
       return {
-        label: `Codec: ${actualCodec}`,
+        label: actualCodec,
         className: 'status-badge status-badge-ok',
       }
     }
 
     return {
-      label: `Codec: ${actualCodec}`,
+      label: actualCodec,
       className: 'status-badge status-badge-bad',
     }
   }
@@ -147,14 +147,14 @@ export function ScanResultsPage({
 
     if (!expectedPixelFormat) {
       return {
-        label: `Pixel format: ${actualPixelFormat ?? 'Unknown'}`,
+        label: actualPixelFormat ?? 'Unknown',
         className: 'status-badge status-badge-bad',
       }
     }
 
     if (!actualPixelFormat) {
       return {
-        label: 'Pixel format: Unknown',
+        label: 'Unknown',
         className: 'status-badge status-badge-bad',
       }
     }
@@ -165,13 +165,13 @@ export function ScanResultsPage({
       normalizedExpectedPixelFormats.includes(normalizedActualPixelFormat)
     ) {
       return {
-        label: `Pixel format: ${actualPixelFormat}`,
+        label: actualPixelFormat,
         className: 'status-badge status-badge-ok',
       }
     }
 
     return {
-      label: `Pixel format: ${actualPixelFormat}`,
+      label: actualPixelFormat,
       className: 'status-badge status-badge-bad',
     }
   }
@@ -341,68 +341,80 @@ export function ScanResultsPage({
                 const pixelFormatBadge = getPixelFormatBadge(result)
 
                 return (
-                  <tr key={result.id}>
-                    <td>
-                      <p className="results-file-name">{result.file_name}</p>
-                      <p className="results-file-path">{result.file_path}</p>
-                      {result.probe_error ? (
-                        <p className="error results-probe-error">Probe error: {result.probe_error}</p>
-                      ) : null}
-                    </td>
-                    <td>{mappingNameById.get(result.folder_mapping_id ?? -1) ?? 'Unmapped'}</td>
-                    <td>
-                      <span className={codecBadge.className}>{codecBadge.label}</span>
-                    </td>
-                    <td>
-                      <span className={pixelFormatBadge.className}>{pixelFormatBadge.label}</span>
-                    </td>
-                    <td>{result.width ?? '?'}x{result.height ?? '?'}</td>
-                    <td>{formatBitrateMBps(result.bitrate_kbps)}</td>
-                    <td>{formatFileSize(result.size_bytes)}</td>
-                    <td>
-                      <span className={tagBadge.className}>{tagBadge.label}</span>
-                    </td>
-                    <td>
-                      <span className={removalBadge.className}>{removalBadge.label}</span>
-                    </td>
-                    <td>
-                      <div className="scan-result-actions">
-                        <button
-                          className="secondary-button"
-                          onClick={() => onSelectResult(result.id)}
-                          type="button"
-                        >
-                          View details
-                        </button>
-                        <button
-                          disabled={scanActionLoading}
-                          onClick={() => onInterrogateResult(result.id)}
-                          type="button"
-                        >
-                          {scanActionLoading ? 'Running...' : 'Interrogate file'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={result.id}>
+                    <tr>
+                      <td>
+                        <p className="results-file-name">{result.file_name}</p>
+                        <p className="results-file-path">{result.file_path}</p>
+                        {result.probe_error ? (
+                          <p className="error results-probe-error">Probe error: {result.probe_error}</p>
+                        ) : null}
+                      </td>
+                      <td>{mappingNameById.get(result.folder_mapping_id ?? -1) ?? 'Unmapped'}</td>
+                      <td>
+                        <span className={codecBadge.className}>{codecBadge.label}</span>
+                      </td>
+                      <td>
+                        <span className={pixelFormatBadge.className}>{pixelFormatBadge.label}</span>
+                      </td>
+                      <td>{result.width ?? '?'}x{result.height ?? '?'}</td>
+                      <td>{formatBitrateMBps(result.bitrate_kbps)}</td>
+                      <td>{formatFileSize(result.size_bytes)}</td>
+                      <td>
+                        <span className={tagBadge.className}>{tagBadge.label}</span>
+                      </td>
+                      <td>
+                        <span className={removalBadge.className}>{removalBadge.label}</span>
+                      </td>
+                      <td>
+                        <div className="scan-result-actions">
+                          <button
+                            className="secondary-button"
+                            onClick={() => {
+                              if (selectedResult?.id === result.id) {
+                                onClearSelectedResult()
+                                return
+                              }
+                              onSelectResult(result.id)
+                            }}
+                            type="button"
+                          >
+                            {selectedResult?.id === result.id ? 'Hide details' : 'View details'}
+                          </button>
+                          <button
+                            disabled={scanActionLoading}
+                            onClick={() => onInterrogateResult(result.id)}
+                            type="button"
+                          >
+                            {scanActionLoading ? 'Running...' : 'Interrogate file'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {selectedResult?.id === result.id ? (
+                      <tr className="results-detail-row">
+                        <td colSpan={9}>
+                          <div className="results-inline-detail">
+                            <div className="list-header">
+                              <h3>Result detail #{selectedResult.id}</h3>
+                              <button
+                                className="secondary-button"
+                                onClick={onClearSelectedResult}
+                                type="button"
+                              >
+                                Close
+                              </button>
+                            </div>
+                            <pre>{JSON.stringify(selectedResultDisplay, null, 2)}</pre>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 )
               })}
             </tbody>
           </table>
-        </div>
-      ) : null}
-
-      {selectedResult ? (
-        <div className="result-detail-overlay" role="dialog" aria-modal="true">
-          <div className="result-detail-backdrop" onClick={onClearSelectedResult} role="presentation" />
-          <div className="panel result-detail-modal">
-            <div className="list-header">
-              <h3>Result detail #{selectedResult.id}</h3>
-              <button className="secondary-button" onClick={onClearSelectedResult} type="button">
-                Close
-              </button>
-            </div>
-            <pre>{JSON.stringify(selectedResultDisplay, null, 2)}</pre>
-          </div>
         </div>
       ) : null}
     </section>

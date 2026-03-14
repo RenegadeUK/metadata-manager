@@ -547,6 +547,23 @@ button {
   margin-top: 6px;
 }
 
+.results-detail-row td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.results-inline-detail {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(7, 16, 22, 0.72);
+}
+
+.results-inline-detail pre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .results-folder-filters {
   display: flex;
   flex-wrap: wrap;
