@@ -268,6 +268,18 @@ def has_pending_interrogation_work(db: Session) -> bool:
     return pending_row is not None
 
 
+def has_never_interrogated_work(db: Session) -> bool:
+    pending_row = (
+        db.query(MediaFileScan.id)
+        .filter(
+            MediaFileScan.is_removed.is_(False),
+            MediaFileScan.interrogated_at.is_(None),
+        )
+        .first()
+    )
+    return pending_row is not None
+
+
 def fail_abandoned_runs(db: Session) -> None:
     abandoned_runs = db.query(ScanRun).filter(ScanRun.status == "running").all()
     if not abandoned_runs:

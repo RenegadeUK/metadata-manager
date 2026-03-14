@@ -9,6 +9,7 @@ from app.models.app_setting import AppSetting
 from app.models.scan_run import ScanRun
 from app.services.scanner import (
     get_running_scan,
+    has_never_interrogated_work,
     has_pending_interrogation_work,
     launch_interrogation_scan,
     run_inventory_scan,
@@ -103,7 +104,10 @@ def _run_inventory_cycle() -> None:
             logger.info("Scheduled interrogation skipped because no pending interrogation work was found")
             return
 
-        if not _is_interrogation_due(db, interrogation_interval_seconds):
+        if not has_never_interrogated_work(db) and not _is_interrogation_due(
+            db,
+            interrogation_interval_seconds,
+        ):
             logger.info(
                 "Scheduled interrogation skipped because cooldown (%ss) has not elapsed",
                 interrogation_interval_seconds,
