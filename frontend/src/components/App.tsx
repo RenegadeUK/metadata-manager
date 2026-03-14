@@ -238,6 +238,7 @@ export function App() {
         activeInventoryRun={activeInventoryRun}
         activeQualityProfile={activeQualityProfile}
         filters={resultsFilters}
+        folderSummary={folderSummary}
         mappings={mappings}
         results={results}
         resultsLoading={resultsLoading}

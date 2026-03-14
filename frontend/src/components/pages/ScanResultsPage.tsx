@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import {
+  type FolderScanSummary,
   type FolderMapping,
   type MediaFileScanResult,
   type QualityProfile,
@@ -10,6 +11,7 @@ import {
 
 type ScanResultsPageProps = {
   mappings: FolderMapping[]
+  folderSummary: FolderScanSummary[]
   activeQualityProfile?: QualityProfile
   results: MediaFileScanResult[]
   resultsLoading: boolean
@@ -27,6 +29,7 @@ type ScanResultsPageProps = {
 
 export function ScanResultsPage({
   mappings,
+  folderSummary,
   activeQualityProfile,
   results,
   resultsLoading,
@@ -42,6 +45,12 @@ export function ScanResultsPage({
   onClearSelectedResult,
 }: ScanResultsPageProps) {
   const [localFilters, setLocalFilters] = useState<ScanResultsFilter>(filters)
+
+  const folderCountMap = new Map(
+    folderSummary
+      .filter((summary) => summary.folder_mapping_id !== null)
+      .map((summary) => [summary.folder_mapping_id as number, summary.file_count]),
+  )
 
   const selectedResultDisplay = selectedResult
     ? (() => {
@@ -158,6 +167,34 @@ export function ScanResultsPage({
         <button className="secondary-button" onClick={onRefresh} type="button">
           Refresh
         </button>
+      </div>
+
+      <div className="results-folder-filters">
+        <button
+          className={
+            localFilters.folderMappingId === undefined
+              ? 'results-folder-filter results-folder-filter-active'
+              : 'results-folder-filter'
+          }
+          onClick={() => setLocalFilters((current) => ({ ...current, folderMappingId: undefined }))}
+          type="button"
+        >
+          All folders ({folderSummary.reduce((total, row) => total + row.file_count, 0)})
+        </button>
+        {mappings.map((mapping) => (
+          <button
+            className={
+              localFilters.folderMappingId === mapping.id
+                ? 'results-folder-filter results-folder-filter-active'
+                : 'results-folder-filter'
+            }
+            key={mapping.id}
+            onClick={() => setLocalFilters((current) => ({ ...current, folderMappingId: mapping.id }))}
+            type="button"
+          >
+            {mapping.name} ({folderCountMap.get(mapping.id) ?? 0})
+          </button>
+        ))}
       </div>
 
       {activeInventoryRun ? (

@@ -502,6 +502,27 @@ button {
   align-items: end;
 }
 
+.results-folder-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.results-folder-filter {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4efe5;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.results-folder-filter-active {
+  background: linear-gradient(135deg, #f48148, #f7bf73);
+  color: #081018;
+  border-color: transparent;
+}
+
 .result-detail {
   margin-top: 8px;
 }
