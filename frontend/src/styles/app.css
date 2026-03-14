@@ -528,6 +528,60 @@ button {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.results-row-compliance-full td {
+  box-shadow: inset 0 2px rgba(154, 240, 168, 0.8), inset 0 -2px rgba(154, 240, 168, 0.8);
+}
+
+.results-row-compliance-full td:first-child {
+  box-shadow:
+    inset 2px 0 rgba(154, 240, 168, 0.8),
+    inset 0 2px rgba(154, 240, 168, 0.8),
+    inset 0 -2px rgba(154, 240, 168, 0.8);
+}
+
+.results-row-compliance-full td:last-child {
+  box-shadow:
+    inset -2px 0 rgba(154, 240, 168, 0.8),
+    inset 0 2px rgba(154, 240, 168, 0.8),
+    inset 0 -2px rgba(154, 240, 168, 0.8);
+}
+
+.results-row-compliance-partial td {
+  box-shadow: inset 0 2px rgba(247, 191, 115, 0.9), inset 0 -2px rgba(247, 191, 115, 0.9);
+}
+
+.results-row-compliance-partial td:first-child {
+  box-shadow:
+    inset 2px 0 rgba(247, 191, 115, 0.9),
+    inset 0 2px rgba(247, 191, 115, 0.9),
+    inset 0 -2px rgba(247, 191, 115, 0.9);
+}
+
+.results-row-compliance-partial td:last-child {
+  box-shadow:
+    inset -2px 0 rgba(247, 191, 115, 0.9),
+    inset 0 2px rgba(247, 191, 115, 0.9),
+    inset 0 -2px rgba(247, 191, 115, 0.9);
+}
+
+.results-row-compliance-none td {
+  box-shadow: inset 0 2px rgba(255, 159, 141, 0.85), inset 0 -2px rgba(255, 159, 141, 0.85);
+}
+
+.results-row-compliance-none td:first-child {
+  box-shadow:
+    inset 2px 0 rgba(255, 159, 141, 0.85),
+    inset 0 2px rgba(255, 159, 141, 0.85),
+    inset 0 -2px rgba(255, 159, 141, 0.85);
+}
+
+.results-row-compliance-none td:last-child {
+  box-shadow:
+    inset -2px 0 rgba(255, 159, 141, 0.85),
+    inset 0 2px rgba(255, 159, 141, 0.85),
+    inset 0 -2px rgba(255, 159, 141, 0.85);
+}
+
 .results-table th {
   position: sticky;
   top: 0;

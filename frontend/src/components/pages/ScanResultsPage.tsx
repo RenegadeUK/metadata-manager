@@ -155,6 +155,15 @@ export function ScanResultsPage({
     }
   }
 
+  function isCodecCompliant(result: MediaFileScanResult) {
+    const expectedCodec = activeQualityProfile?.codec
+    const actualCodec = result.codec
+    if (!expectedCodec || !actualCodec) {
+      return false
+    }
+    return actualCodec === expectedCodec
+  }
+
   function getFileFormatBadge(result: MediaFileScanResult) {
     const expectedFileFormat = activeQualityProfile?.file_format
     const actualFileFormat = result.extension
@@ -195,6 +204,22 @@ export function ScanResultsPage({
     }
   }
 
+  function isFileFormatCompliant(result: MediaFileScanResult) {
+    const expectedFileFormat = activeQualityProfile?.file_format
+    const actualFileFormat = result.extension
+    const normalizedExpectedFileFormats = (expectedFileFormat ?? '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase().replace(/^\./, ''))
+      .filter((value) => value.length > 0)
+    const normalizedActualFileFormat = actualFileFormat?.trim().toLowerCase().replace(/^\./, '')
+
+    if (!expectedFileFormat || !normalizedActualFileFormat) {
+      return false
+    }
+
+    return normalizedExpectedFileFormats.includes(normalizedActualFileFormat)
+  }
+
   function getPixelFormatBadge(result: MediaFileScanResult) {
     const expectedPixelFormat = activeQualityProfile?.pixel_format
     const actualPixelFormat = result.pixel_format
@@ -233,6 +258,41 @@ export function ScanResultsPage({
       label: actualPixelFormat,
       className: 'status-badge status-badge-bad',
     }
+  }
+
+  function isPixelFormatCompliant(result: MediaFileScanResult) {
+    const expectedPixelFormat = activeQualityProfile?.pixel_format
+    const actualPixelFormat = result.pixel_format
+    const normalizedExpectedPixelFormats = (expectedPixelFormat ?? '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0)
+    const normalizedActualPixelFormat = actualPixelFormat?.trim().toLowerCase()
+
+    if (!expectedPixelFormat || !normalizedActualPixelFormat) {
+      return false
+    }
+
+    return normalizedExpectedPixelFormats.includes(normalizedActualPixelFormat)
+  }
+
+  function getRowComplianceClass(result: MediaFileScanResult) {
+    const compliantChecks = [
+      isCodecCompliant(result),
+      isPixelFormatCompliant(result),
+      isFileFormatCompliant(result),
+      result.tag_status === 'tag_match',
+    ].filter(Boolean).length
+
+    if (compliantChecks === 4) {
+      return 'results-row-compliance-full'
+    }
+
+    if (compliantChecks > 0) {
+      return 'results-row-compliance-partial'
+    }
+
+    return 'results-row-compliance-none'
   }
 
   useEffect(() => {
@@ -478,10 +538,11 @@ export function ScanResultsPage({
                 const fileFormatBadge = getFileFormatBadge(result)
                 const codecBadge = getCodecBadge(result)
                 const pixelFormatBadge = getPixelFormatBadge(result)
+                const rowComplianceClass = getRowComplianceClass(result)
 
                 return (
                   <Fragment key={result.id}>
-                    <tr>
+                    <tr className={rowComplianceClass}>
                       <td>
                         <p className="results-file-name">{result.file_name}</p>
                         <p className="results-file-path">{result.file_path}</p>
