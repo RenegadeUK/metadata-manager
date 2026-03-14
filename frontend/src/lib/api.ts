@@ -47,6 +47,7 @@ export type ScanSettings = {
   'scan.ffprobe_timeout_seconds': string
   'scan.hard_delete_after_days': string
   'scan.inventory_interval_seconds': string
+  'scan.interrogation_interval_seconds': string
 }
 
 export type OnboardingStatus = {

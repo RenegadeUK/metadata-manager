@@ -19,6 +19,7 @@ DEFAULT_SCAN_SETTINGS = {
     "scan.ffprobe_timeout_seconds": "30",
     "scan.hard_delete_after_days": "14",
     "scan.inventory_interval_seconds": "3600",
+    "scan.interrogation_interval_seconds": "3600",
 }
 
 
@@ -74,6 +75,7 @@ class ScanSettingsPayload(BaseModel):
     ffprobe_timeout_seconds: str = Field(alias="scan.ffprobe_timeout_seconds")
     hard_delete_after_days: str = Field(alias="scan.hard_delete_after_days")
     inventory_interval_seconds: str = Field(alias="scan.inventory_interval_seconds")
+    interrogation_interval_seconds: str = Field(alias="scan.interrogation_interval_seconds")
 
     model_config = {"populate_by_name": True}
 

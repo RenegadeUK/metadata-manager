@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
@@ -246,6 +247,25 @@ def get_running_scan(db: Session, run_type: str) -> ScanRun | None:
         .order_by(ScanRun.started_at.desc(), ScanRun.id.desc())
         .first()
     )
+
+
+def has_pending_interrogation_work(db: Session) -> bool:
+    pending_row = (
+        db.query(MediaFileScan.id)
+        .filter(
+            MediaFileScan.is_removed.is_(False),
+            or_(
+                MediaFileScan.interrogated_at.is_(None),
+                and_(
+                    MediaFileScan.modified_at.is_not(None),
+                    MediaFileScan.interrogated_at.is_not(None),
+                    MediaFileScan.modified_at > MediaFileScan.interrogated_at,
+                ),
+            ),
+        )
+        .first()
+    )
+    return pending_row is not None
 
 
 def fail_abandoned_runs(db: Session) -> None:

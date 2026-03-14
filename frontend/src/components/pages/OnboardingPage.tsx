@@ -554,6 +554,19 @@ export function OnboardingPage({
               required
             />
           </label>
+          <label>
+            Interrogation interval seconds (0 disables scheduled interrogation)
+            <input
+              value={scanSettingsForm['scan.interrogation_interval_seconds']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.interrogation_interval_seconds': event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
           <button disabled={onboardingSaving} type="submit">Save scan settings</button>
         </form>
       ) : null}
