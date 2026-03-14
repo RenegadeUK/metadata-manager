@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import api_router
 from app.core.config import get_settings
+from app.db.migrations import run_migrations
 from app.services.inventory_scheduler import start_inventory_scheduler, stop_inventory_scheduler
 
 settings = get_settings()
@@ -25,6 +26,7 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 async def on_startup() -> None:
+    run_migrations()
     start_inventory_scheduler()
 
 
