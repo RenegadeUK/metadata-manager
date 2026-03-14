@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.media_file_scan import MediaFileScan
 from app.models.scan_run import ScanRun
-from app.services.scanner import launch_interrogation_scan, launch_inventory_scan
+from app.services.scanner import interrogate_scan_result, launch_interrogation_scan, launch_inventory_scan
 
 router = APIRouter(prefix="/api/scan", tags=["scan"])
 
@@ -155,3 +155,15 @@ def get_scan_result(result_id: int, db: Session = Depends(get_db)) -> MediaFileS
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan result not found")
     return row
+
+
+@router.post("/results/{result_id}/interrogate", response_model=MediaFileScanRead)
+def interrogate_result(result_id: int, db: Session = Depends(get_db)) -> MediaFileScan:
+    try:
+        return interrogate_scan_result(db, result_id)
+    except LookupError as not_found_error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(not_found_error)) from not_found_error
+    except RuntimeError as conflict_error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(conflict_error)) from conflict_error
+    except ValueError as validation_error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(validation_error)) from validation_error

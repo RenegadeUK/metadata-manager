@@ -8,8 +8,10 @@ type ScanResultsPageProps = {
   resultsLoading: boolean
   filters: ScanResultsFilter
   selectedResult: MediaFileScanResult | null
+  scanActionLoading: boolean
   onApplyFilters: (filters: ScanResultsFilter) => void
   onRefresh: () => void
+  onInterrogateResult: (resultId: number) => void
   onSelectResult: (resultId: number) => void
   onClearSelectedResult: () => void
 }
@@ -20,8 +22,10 @@ export function ScanResultsPage({
   resultsLoading,
   filters,
   selectedResult,
+  scanActionLoading,
   onApplyFilters,
   onRefresh,
+  onInterrogateResult,
   onSelectResult,
   onClearSelectedResult,
 }: ScanResultsPageProps) {
@@ -130,9 +134,14 @@ export function ScanResultsPage({
           <li key={result.id}>
             <div className="list-header">
               <strong>{result.file_name}</strong>
-              <button className="secondary-button" onClick={() => onSelectResult(result.id)} type="button">
-                Interrogate
-              </button>
+              <div className="scan-result-actions">
+                <button className="secondary-button" onClick={() => onSelectResult(result.id)} type="button">
+                  View details
+                </button>
+                <button disabled={scanActionLoading} onClick={() => onInterrogateResult(result.id)} type="button">
+                  {scanActionLoading ? 'Running...' : 'Interrogate file'}
+                </button>
+              </div>
             </div>
             <p>{result.file_path}</p>
             <p>

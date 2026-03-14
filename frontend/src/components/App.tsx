@@ -106,6 +106,7 @@ export function App() {
     handleRunInterrogationNow,
     handleApplyResultsFilters,
     handleOpenResultDetail,
+    handleInterrogateResult,
   } = useScanData({ setError })
 
   function handleOpenMappingResults(mappingId: number) {
@@ -228,9 +229,11 @@ export function App() {
         mappings={mappings}
         results={results}
         resultsLoading={resultsLoading}
+        scanActionLoading={scanActionLoading}
         selectedResult={selectedResult}
         onApplyFilters={(filters) => void handleApplyResultsFilters(filters)}
         onClearSelectedResult={() => setSelectedResult(null)}
+        onInterrogateResult={(resultId) => void handleInterrogateResult(resultId)}
         onRefresh={() => void loadResults()}
         onSelectResult={(resultId) => void handleOpenResultDetail(resultId)}
       />

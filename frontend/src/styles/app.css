@@ -354,6 +354,12 @@ button {
   gap: 10px;
 }
 
+.scan-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .results-filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

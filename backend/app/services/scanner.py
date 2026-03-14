@@ -527,6 +527,94 @@ def launch_interrogation_scan(db: Session) -> ScanRun:
         return run
 
 
+def interrogate_scan_result(db: Session, result_id: int) -> MediaFileScan:
+    existing_run = get_running_scan(db, "interrogation")
+    if existing_run is not None:
+        raise RuntimeError("An interrogation scan is already running")
+
+    media_row = db.get(MediaFileScan, result_id)
+    if media_row is None:
+        raise LookupError("Scan result not found")
+    if media_row.is_removed:
+        raise ValueError("Removed files cannot be interrogated")
+
+    active_profile = (
+        db.query(QualityProfile)
+        .filter(QualityProfile.is_active.is_(True))
+        .order_by(QualityProfile.id.asc())
+        .first()
+    )
+    active_tag_rule = (
+        db.query(MetadataTagRule)
+        .filter(MetadataTagRule.is_active.is_(True))
+        .order_by(MetadataTagRule.id.asc())
+        .first()
+    )
+
+    if active_profile is None:
+        raise ValueError("No active quality profile configured")
+    if active_tag_rule is None:
+        raise ValueError("No active metadata tag rule configured")
+
+    timeout_raw = _get_setting(db, "scan.ffprobe_timeout_seconds", "30")
+    try:
+        timeout_seconds = int(timeout_raw)
+    except ValueError:
+        timeout_seconds = 30
+
+    run = _create_run(db, "interrogation")
+    run.total_files = 1
+    db.add(run)
+    db.commit()
+
+    try:
+        file_path = Path(media_row.file_path)
+        if not file_path.exists() or not file_path.is_file():
+            raise FileNotFoundError(f"File missing during interrogation: {media_row.file_path}")
+
+        stat = file_path.stat()
+        probe_data = _probe_media(file_path, timeout_seconds)
+        quality_status = _evaluate_quality(probe_data, active_profile)
+        tag_status, tag_value = _evaluate_tag(probe_data, active_tag_rule)
+
+        now = datetime.now(timezone.utc)
+        is_first_interrogation = media_row.interrogated_at is None
+
+        media_row.file_name = file_path.name
+        media_row.extension = file_path.suffix.lower().lstrip(".")
+        media_row.size_bytes = stat.st_size
+        media_row.modified_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+        media_row.scan_run_id = run.id
+        media_row.codec = probe_data.get("codec")
+        media_row.pixel_format = probe_data.get("pixel_format")
+        media_row.width = probe_data.get("width")
+        media_row.height = probe_data.get("height")
+        media_row.bitrate_kbps = probe_data.get("bitrate_kbps")
+        media_row.video_profile = probe_data.get("video_profile")
+        media_row.tag_key = active_tag_rule.tag_key
+        media_row.tag_value = tag_value
+        media_row.quality_status = quality_status
+        media_row.tag_status = tag_status
+        media_row.probe_error = probe_data.get("probe_error")
+        media_row.interrogated_at = now
+        media_row.scanned_at = now
+
+        run.processed_files = 1
+        run.new_files = 1 if is_first_interrogation else 0
+        run.updated_files = 0 if is_first_interrogation else 1
+
+        db.add(media_row)
+        db.add(run)
+        db.commit()
+        db.refresh(media_row)
+
+        _complete_run(db, run, f"Interrogated result {media_row.id}")
+        return media_row
+    except Exception as interrogation_error:
+        _fail_run(db, run, str(interrogation_error))
+        raise
+
+
 def run_inventory_scan(db: Session) -> ScanRun:
     existing_run = get_running_scan(db, "inventory")
     if existing_run is not None:

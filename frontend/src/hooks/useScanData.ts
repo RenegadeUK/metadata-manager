@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import {
   fetchFolderScanSummary,
+  interrogateScanResult,
   fetchScanResult,
   fetchScanResults,
   fetchScanRuns,
@@ -153,6 +154,23 @@ export function useScanData({ setError }: UseScanDataArgs) {
     }
   }
 
+  async function handleInterrogateResult(resultId: number) {
+    setScanActionLoading(true)
+    setError(null)
+    try {
+      const updated = await interrogateScanResult(resultId)
+      setSelectedResult(updated)
+      setScanActionMessage(`Interrogated ${updated.file_name}`)
+      await loadScanRuns()
+      await loadResults()
+      await loadFolderSummary()
+    } catch (interrogateError) {
+      setError(interrogateError instanceof Error ? interrogateError.message : 'Unexpected error')
+    } finally {
+      setScanActionLoading(false)
+    }
+  }
+
   return {
     scanRuns,
     scanRunsLoading,
@@ -173,6 +191,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
     handleRunInterrogationNow,
     handleApplyResultsFilters,
     handleOpenResultDetail,
+    handleInterrogateResult,
     setResultsFilters,
   }
 }

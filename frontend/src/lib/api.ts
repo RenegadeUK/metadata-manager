@@ -395,6 +395,16 @@ export async function fetchScanResult(resultId: number): Promise<MediaFileScanRe
   return response.json()
 }
 
+export async function interrogateScanResult(resultId: number): Promise<MediaFileScanResult> {
+  const response = await fetch(`${API_BASE}/api/scan/results/${resultId}/interrogate`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to interrogate scan result: ${response.status}`)
+  }
+  return response.json()
+}
+
 export async function fetchFolderScanSummary(): Promise<FolderScanSummary[]> {
   const response = await fetch(`${API_BASE}/api/scan/folder-summary`)
   if (!response.ok) {
