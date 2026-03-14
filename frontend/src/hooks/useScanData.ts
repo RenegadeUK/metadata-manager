@@ -25,7 +25,8 @@ type LoadOptions = {
 const INITIAL_FILTERS: ScanResultsFilter = {
   pathQuery: '',
   extension: '',
-  qualityStatus: '',
+  codec: '',
+  pixelFormat: '',
   tagStatus: '',
   removed: undefined,
   limit: 200,

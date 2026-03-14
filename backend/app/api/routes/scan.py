@@ -106,7 +106,8 @@ def list_scan_results(
     path_query: str | None = Query(default=None),
     folder_mapping_id: int | None = Query(default=None),
     extension: str | None = Query(default=None),
-    quality_status: str | None = Query(default=None),
+    codec: str | None = Query(default=None),
+    pixel_format: str | None = Query(default=None),
     tag_status: str | None = Query(default=None),
     removed: bool | None = Query(default=None),
     limit: int = Query(default=200, ge=1, le=2000),
@@ -121,8 +122,10 @@ def list_scan_results(
         query = query.filter(MediaFileScan.folder_mapping_id == folder_mapping_id)
     if extension:
         query = query.filter(MediaFileScan.extension == extension.lower().lstrip("."))
-    if quality_status:
-        query = query.filter(MediaFileScan.quality_status == quality_status)
+    if codec:
+        query = query.filter(MediaFileScan.codec.ilike(codec.strip()))
+    if pixel_format:
+        query = query.filter(MediaFileScan.pixel_format.ilike(pixel_format.strip()))
     if tag_status:
         query = query.filter(MediaFileScan.tag_status == tag_status)
     if removed is not None:

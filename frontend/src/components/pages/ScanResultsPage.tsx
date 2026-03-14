@@ -43,14 +43,13 @@ export function ScanResultsPage({
 }: ScanResultsPageProps) {
   const [localFilters, setLocalFilters] = useState<ScanResultsFilter>(filters)
 
-  function getQualityBadge(result: MediaFileScanResult) {
-    if (result.quality_status === 'meets_profile') {
-      return { label: 'Quality: Meets', className: 'status-badge status-badge-ok' }
+  function formatBitrateMBps(bitrateKbps: number | null | undefined) {
+    if (bitrateKbps === null || bitrateKbps === undefined) {
+      return '? MB/s'
     }
-    if (result.quality_status === 'below_profile') {
-      return { label: 'Quality: Below', className: 'status-badge status-badge-bad' }
-    }
-    return { label: 'Quality: Unknown', className: 'status-badge status-badge-bad' }
+
+    const megabytesPerSecond = bitrateKbps / 8000
+    return `${megabytesPerSecond.toFixed(2)} MB/s`
   }
 
   function getTagBadge(result: MediaFileScanResult) {
@@ -100,6 +99,8 @@ export function ScanResultsPage({
   function getPixelFormatBadge(result: MediaFileScanResult) {
     const expectedPixelFormat = activeQualityProfile?.pixel_format
     const actualPixelFormat = result.pixel_format
+    const normalizedExpectedPixelFormat = expectedPixelFormat?.trim().toLowerCase()
+    const normalizedActualPixelFormat = actualPixelFormat?.trim().toLowerCase()
 
     if (!expectedPixelFormat) {
       return {
@@ -115,7 +116,11 @@ export function ScanResultsPage({
       }
     }
 
-    if (actualPixelFormat === expectedPixelFormat) {
+    if (
+      normalizedExpectedPixelFormat !== undefined &&
+      normalizedActualPixelFormat !== undefined &&
+      normalizedActualPixelFormat === normalizedExpectedPixelFormat
+    ) {
       return {
         label: `Pixel format: ${actualPixelFormat}`,
         className: 'status-badge status-badge-ok',
@@ -188,17 +193,20 @@ export function ScanResultsPage({
             setLocalFilters((current) => ({ ...current, extension: event.target.value }))
           }
         />
-        <select
-          value={localFilters.qualityStatus ?? ''}
+        <input
+          placeholder="Codec (e.g. hevc)"
+          value={localFilters.codec ?? ''}
           onChange={(event) =>
-            setLocalFilters((current) => ({ ...current, qualityStatus: event.target.value }))
+            setLocalFilters((current) => ({ ...current, codec: event.target.value }))
           }
-        >
-          <option value="">All quality</option>
-          <option value="meets_profile">meets_profile</option>
-          <option value="below_profile">below_profile</option>
-          <option value="unknown">unknown</option>
-        </select>
+        />
+        <input
+          placeholder="Pixel format (e.g. p010le)"
+          value={localFilters.pixelFormat ?? ''}
+          onChange={(event) =>
+            setLocalFilters((current) => ({ ...current, pixelFormat: event.target.value }))
+          }
+        />
         <select
           value={localFilters.tagStatus ?? ''}
           onChange={(event) =>
@@ -239,7 +247,6 @@ export function ScanResultsPage({
 
       <ul className="item-list">
         {results.map((result) => {
-          const qualityBadge = getQualityBadge(result)
           const tagBadge = getTagBadge(result)
           const removalBadge = getRemovalBadge(result)
           const codecBadge = getCodecBadge(result)
@@ -248,7 +255,6 @@ export function ScanResultsPage({
           return (
             <li key={result.id}>
               <div className="result-badges">
-                <span className={qualityBadge.className}>{qualityBadge.label}</span>
                 <span className={tagBadge.className}>{tagBadge.label}</span>
                 <span className={codecBadge.className}>{codecBadge.label}</span>
                 <span className={pixelFormatBadge.className}>{pixelFormatBadge.label}</span>
@@ -267,7 +273,7 @@ export function ScanResultsPage({
               </div>
               <p>{result.file_path}</p>
               <p>
-                {result.extension} · {result.codec ?? 'n/a'} · {result.width ?? '?'}x{result.height ?? '?'} · {result.bitrate_kbps ?? '?'} kbps
+                {result.extension} · {result.codec ?? 'n/a'} · {result.pixel_format ?? 'n/a'} · {result.width ?? '?'}x{result.height ?? '?'} · {formatBitrateMBps(result.bitrate_kbps)}
               </p>
               {result.probe_error ? <p className="error">Probe error: {result.probe_error}</p> : null}
             </li>

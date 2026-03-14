@@ -129,7 +129,8 @@ export type ScanResultsFilter = {
   pathQuery?: string
   folderMappingId?: number
   extension?: string
-  qualityStatus?: string
+  codec?: string
+  pixelFormat?: string
   tagStatus?: string
   removed?: boolean
   limit?: number
@@ -373,7 +374,8 @@ export async function fetchScanResults(
     params.set('folder_mapping_id', String(filters.folderMappingId))
   }
   if (filters.extension) params.set('extension', filters.extension)
-  if (filters.qualityStatus) params.set('quality_status', filters.qualityStatus)
+  if (filters.codec) params.set('codec', filters.codec)
+  if (filters.pixelFormat) params.set('pixel_format', filters.pixelFormat)
   if (filters.tagStatus) params.set('tag_status', filters.tagStatus)
   if (filters.removed !== undefined) params.set('removed', String(filters.removed))
   params.set('limit', String(filters.limit ?? 200))
