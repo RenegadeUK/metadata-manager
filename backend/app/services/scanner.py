@@ -208,12 +208,17 @@ def _complete_run(db: Session, run: ScanRun, message: str) -> ScanRun:
 
 
 def _fail_run(db: Session, run: ScanRun, error_message: str) -> None:
-    run.status = "failed"
-    run.message = error_message
-    run.ended_at = datetime.now(timezone.utc)
-    db.add(run)
+    db.rollback()
+    persisted_run = db.get(ScanRun, run.id)
+    if persisted_run is None:
+        return
+
+    persisted_run.status = "failed"
+    persisted_run.message = error_message
+    persisted_run.ended_at = datetime.now(timezone.utc)
+    db.add(persisted_run)
     db.commit()
-    db.refresh(run)
+    db.refresh(persisted_run)
 
 
 def _lookup_scan_row(db: Session, file_path: Path, device_id: int | None, inode: int | None) -> MediaFileScan | None:
@@ -298,6 +303,12 @@ def run_inventory_scan(db: Session) -> ScanRun:
                 db.refresh(media_row)
                 seen_result_ids.add(media_row.id)
             except Exception as file_error:
+                db.rollback()
+                persisted_run = db.get(ScanRun, run.id)
+                if persisted_run is None:
+                    raise
+                run = persisted_run
+
                 run.processed_files += 1
                 run.error_files += 1
                 run.message = str(file_error)
@@ -425,6 +436,12 @@ def run_interrogation_scan(db: Session) -> ScanRun:
                 db.add(run)
                 db.commit()
             except Exception as file_error:
+                db.rollback()
+                persisted_run = db.get(ScanRun, run.id)
+                if persisted_run is None:
+                    raise
+                run = persisted_run
+
                 run.processed_files += 1
                 run.error_files += 1
                 run.message = str(file_error)
