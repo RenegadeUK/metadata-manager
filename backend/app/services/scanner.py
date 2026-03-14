@@ -231,7 +231,13 @@ def _evaluate_quality(
 
 def _evaluate_tag(probe_data: dict[str, Any], rule: MetadataTagRule) -> tuple[str, str | None]:
     tags = probe_data.get("tags") or {}
+    normalized_rule_key = rule.tag_key.strip().lower()
     value = tags.get(rule.tag_key)
+    if value is None:
+        for tag_key, tag_value in tags.items():
+            if str(tag_key).strip().lower() == normalized_rule_key:
+                value = tag_value
+                break
     if value is None:
         return ("missing_tag", None)
 
