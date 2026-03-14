@@ -1,0 +1,310 @@
+:root {
+  color: #f4efe5;
+  background:
+    radial-gradient(circle at top, rgba(244, 129, 72, 0.35), transparent 32%),
+    linear-gradient(180deg, #10212b 0%, #09131a 100%);
+  font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+.sidebar {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  height: calc(100vh - 40px);
+  position: sticky;
+  top: 20px;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.nav-link {
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4efe5;
+  font-weight: 600;
+}
+
+.nav-link-active {
+  background: linear-gradient(135deg, #f48148, #f7bf73);
+  color: #081018;
+}
+
+.content-area {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+}
+
+.page-header h2 {
+  margin: 0;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  color: #f7bf73;
+  margin: 0;
+}
+
+.panel {
+  background: rgba(7, 16, 22, 0.66);
+  border: 1px solid rgba(247, 191, 115, 0.16);
+  border-radius: 24px;
+  padding: 24px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+}
+
+.composer {
+  display: grid;
+  gap: 16px;
+}
+
+.composer label {
+  display: grid;
+  gap: 8px;
+  color: #d7dfdf;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid rgba(244, 239, 229, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  padding: 12px 14px;
+}
+
+select {
+  appearance: none;
+}
+
+button {
+  width: fit-content;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #f48148, #f7bf73);
+  color: #081018;
+  font-weight: 700;
+}
+
+.secondary-button {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f4efe5;
+}
+
+.danger-button {
+  background: rgba(220, 38, 38, 0.8);
+  color: #fff;
+}
+
+.list-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.settings-panel {
+  align-content: start;
+}
+
+.onboarding-panel {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.onboarding-panel h3 {
+  margin: 0;
+}
+
+.mapping-list {
+  display: grid;
+  gap: 12px;
+}
+
+.mapping-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mapping-details {
+  display: grid;
+  gap: 4px;
+}
+
+.mapping-edit-form {
+  width: 100%;
+}
+
+.mapping-path {
+  margin: 0 0 4px;
+  color: #c0c8cd;
+}
+
+.mapping-name {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.mapping-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.toggle-row {
+  display: flex !important;
+  align-items: center;
+  gap: 10px !important;
+}
+
+.toggle-row input[type='checkbox'] {
+  width: auto;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+
+.item-list li {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.item-list p {
+  margin: 8px 0 0;
+  color: #d2d7db;
+}
+
+.error {
+  color: #ff9f8d;
+}
+
+.success {
+  color: #9af0a8;
+}
+
+.muted {
+  margin: 0;
+  color: #c0c8cd;
+}
+
+.restart-banner {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(247, 191, 115, 0.12);
+  border: 1px solid rgba(247, 191, 115, 0.24);
+}
+
+.restart-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #f7bf73;
+}
+
+.restart-banner code {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #f6e8d0;
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .mapping-card {
+    flex-direction: column;
+  }
+
+  .mapping-actions {
+    flex-wrap: wrap;
+  }
+}
