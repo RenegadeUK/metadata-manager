@@ -528,13 +528,13 @@ export function ScanResultsPage({
               <tr>
                 <th>File</th>
                 <th>Folder</th>
+                <th>Tag</th>
                 <th>File format</th>
                 <th>Codec</th>
                 <th>Pixel format</th>
                 <th>Resolution</th>
                 <th>Bitrate</th>
                 <th>File size</th>
-                <th>Tag</th>
                 <th>State</th>
                 <th>Actions</th>
               </tr>
@@ -560,6 +560,9 @@ export function ScanResultsPage({
                       </td>
                       <td>{mappingNameById.get(result.folder_mapping_id ?? -1) ?? 'Unmapped'}</td>
                       <td>
+                        <span className={tagBadge.className}>{tagBadge.label}</span>
+                      </td>
+                      <td>
                         <span className={fileFormatBadge.className}>{fileFormatBadge.label}</span>
                       </td>
                       <td>
@@ -571,9 +574,6 @@ export function ScanResultsPage({
                       <td>{result.width ?? '?'}x{result.height ?? '?'}</td>
                       <td>{formatBitrateMBps(result.bitrate_kbps)}</td>
                       <td>{formatFileSize(result.size_bytes)}</td>
-                      <td>
-                        <span className={tagBadge.className}>{tagBadge.label}</span>
-                      </td>
                       <td>
                         <span className={removalBadge.className}>{removalBadge.label}</span>
                       </td>
