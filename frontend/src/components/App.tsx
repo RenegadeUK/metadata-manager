@@ -95,6 +95,7 @@ export function App() {
     activeInventoryRun,
     activeInterrogationRun,
     folderSummary,
+    filterOptions,
     results,
     resultsLoading,
     resultsFilters,
@@ -244,6 +245,7 @@ export function App() {
         activeInventoryRun={activeInventoryRun}
         activeQualityProfile={activeQualityProfile}
         filters={resultsFilters}
+        filterOptions={filterOptions}
         folderSummary={folderSummary}
         mappings={mappings}
         results={results}

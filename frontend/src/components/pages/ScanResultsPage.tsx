@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 
 import {
+  type ScanFilterOptions,
   type FolderScanSummary,
   type FolderMapping,
   type MediaFileScanResult,
@@ -12,6 +13,7 @@ import {
 type ScanResultsPageProps = {
   mappings: FolderMapping[]
   folderSummary: FolderScanSummary[]
+  filterOptions: ScanFilterOptions
   activeQualityProfile?: QualityProfile
   results: MediaFileScanResult[]
   resultsLoading: boolean
@@ -30,6 +32,7 @@ type ScanResultsPageProps = {
 export function ScanResultsPage({
   mappings,
   folderSummary,
+  filterOptions,
   activeQualityProfile,
   results,
   resultsLoading,
@@ -277,27 +280,45 @@ export function ScanResultsPage({
             setLocalFilters((current) => ({ ...current, pathQuery: event.target.value }))
           }
         />
-        <input
-          placeholder="Extension (e.g. mkv)"
+        <select
           value={localFilters.extension ?? ''}
           onChange={(event) =>
             setLocalFilters((current) => ({ ...current, extension: event.target.value }))
           }
-        />
-        <input
-          placeholder="Codec (e.g. hevc)"
+        >
+          <option value="">All extensions</option>
+          {filterOptions.extensions.map((extension) => (
+            <option key={extension} value={extension}>
+              {extension}
+            </option>
+          ))}
+        </select>
+        <select
           value={localFilters.codec ?? ''}
           onChange={(event) =>
             setLocalFilters((current) => ({ ...current, codec: event.target.value }))
           }
-        />
-        <input
-          placeholder="Pixel format (e.g. p010le)"
+        >
+          <option value="">All codecs</option>
+          {filterOptions.codecs.map((codec) => (
+            <option key={codec} value={codec}>
+              {codec}
+            </option>
+          ))}
+        </select>
+        <select
           value={localFilters.pixelFormat ?? ''}
           onChange={(event) =>
             setLocalFilters((current) => ({ ...current, pixelFormat: event.target.value }))
           }
-        />
+        >
+          <option value="">All pixel formats</option>
+          {filterOptions.pixel_formats.map((pixelFormat) => (
+            <option key={pixelFormat} value={pixelFormat}>
+              {pixelFormat}
+            </option>
+          ))}
+        </select>
         <select
           value={localFilters.tagStatus ?? ''}
           onChange={(event) =>

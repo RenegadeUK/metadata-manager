@@ -69,6 +69,12 @@ class FolderScanSummaryRead(BaseModel):
     compliant_count: int
 
 
+class ScanFilterOptionsRead(BaseModel):
+    extensions: list[str]
+    codecs: list[str]
+    pixel_formats: list[str]
+
+
 @router.post("/run", response_model=ScanRunRead, status_code=status.HTTP_202_ACCEPTED)
 def start_scan(db: Session = Depends(get_db)) -> ScanRun:
     try:
@@ -179,6 +185,40 @@ def list_folder_summary(db: Session = Depends(get_db)) -> list[FolderScanSummary
         )
         for row in rows
     ]
+
+
+@router.get("/filter-options", response_model=ScanFilterOptionsRead)
+def get_scan_filter_options(db: Session = Depends(get_db)) -> ScanFilterOptionsRead:
+    extensions = [
+        row[0]
+        for row in db.query(MediaFileScan.extension)
+        .filter(MediaFileScan.extension.is_not(None), MediaFileScan.extension != "")
+        .distinct()
+        .order_by(MediaFileScan.extension.asc())
+        .all()
+    ]
+    codecs = [
+        row[0]
+        for row in db.query(MediaFileScan.codec)
+        .filter(MediaFileScan.codec.is_not(None), MediaFileScan.codec != "")
+        .distinct()
+        .order_by(MediaFileScan.codec.asc())
+        .all()
+    ]
+    pixel_formats = [
+        row[0]
+        for row in db.query(MediaFileScan.pixel_format)
+        .filter(MediaFileScan.pixel_format.is_not(None), MediaFileScan.pixel_format != "")
+        .distinct()
+        .order_by(MediaFileScan.pixel_format.asc())
+        .all()
+    ]
+
+    return ScanFilterOptionsRead(
+        extensions=extensions,
+        codecs=codecs,
+        pixel_formats=pixel_formats,
+    )
 
 
 @router.get("/results/{result_id}", response_model=MediaFileScanRead)

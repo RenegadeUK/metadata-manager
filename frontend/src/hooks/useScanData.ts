@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 
 import {
+  fetchScanFilterOptions,
   fetchFolderScanSummary,
   interrogateScanResult,
   fetchScanResult,
   fetchScanResults,
   fetchScanRuns,
+  type ScanFilterOptions,
   type FolderScanSummary,
   startInterrogationScan,
   startInventoryScan,
@@ -42,6 +44,11 @@ export function useScanData({ setError }: UseScanDataArgs) {
   const [results, setResults] = useState<MediaFileScanResult[]>([])
   const [resultsLoading, setResultsLoading] = useState(true)
   const [folderSummary, setFolderSummary] = useState<FolderScanSummary[]>([])
+  const [filterOptions, setFilterOptions] = useState<ScanFilterOptions>({
+    extensions: [],
+    codecs: [],
+    pixel_formats: [],
+  })
   const [resultsFilters, setResultsFilters] = useState<ScanResultsFilter>(INITIAL_FILTERS)
   const [selectedResult, setSelectedResult] = useState<MediaFileScanResult | null>(null)
 
@@ -95,10 +102,20 @@ export function useScanData({ setError }: UseScanDataArgs) {
     }
   }
 
+  async function loadFilterOptions() {
+    try {
+      const options = await fetchScanFilterOptions()
+      setFilterOptions(options)
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unexpected error')
+    }
+  }
+
   useEffect(() => {
     void loadScanRuns()
     void loadResults(INITIAL_FILTERS)
     void loadFolderSummary()
+    void loadFilterOptions()
   }, [])
 
   useEffect(() => {
@@ -126,6 +143,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
       await loadScanRuns()
       await loadResults()
       await loadFolderSummary()
+      await loadFilterOptions()
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : 'Unexpected error')
     } finally {
@@ -147,6 +165,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
       await loadScanRuns()
       await loadResults()
       await loadFolderSummary()
+      await loadFilterOptions()
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : 'Unexpected error')
     } finally {
@@ -178,6 +197,7 @@ export function useScanData({ setError }: UseScanDataArgs) {
       await loadScanRuns()
       await loadResults()
       await loadFolderSummary()
+      await loadFilterOptions()
     } catch (interrogateError) {
       setError(interrogateError instanceof Error ? interrogateError.message : 'Unexpected error')
     } finally {
@@ -195,12 +215,14 @@ export function useScanData({ setError }: UseScanDataArgs) {
     results,
     resultsLoading,
     folderSummary,
+    filterOptions,
     resultsFilters,
     selectedResult,
     setSelectedResult,
     loadScanRuns,
     loadResults,
     loadFolderSummary,
+    loadFilterOptions,
     handleRunInventoryNow,
     handleRunInterrogationNow,
     handleApplyResultsFilters,

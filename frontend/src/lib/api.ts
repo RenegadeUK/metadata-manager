@@ -146,6 +146,12 @@ export type FolderScanSummary = {
   compliant_count: number
 }
 
+export type ScanFilterOptions = {
+  extensions: string[]
+  codecs: string[]
+  pixel_formats: string[]
+}
+
 type SettingsResponse = {
   values: AppSettings
   restart_required: boolean
@@ -415,6 +421,14 @@ export async function fetchFolderScanSummary(): Promise<FolderScanSummary[]> {
   const response = await fetch(`${API_BASE}/api/scan/folder-summary`)
   if (!response.ok) {
     throw new Error(`Failed to fetch folder scan summary: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function fetchScanFilterOptions(): Promise<ScanFilterOptions> {
+  const response = await fetch(`${API_BASE}/api/scan/filter-options`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch scan filter options: ${response.status}`)
   }
   return response.json()
 }
