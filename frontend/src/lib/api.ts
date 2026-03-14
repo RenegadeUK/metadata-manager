@@ -8,6 +8,7 @@ export type FolderMapping = {
   id: number
   name: string
   source_path: string
+  unmanic_path_prefix: string | null
   recursive: boolean
   is_active: boolean
   notes: string | null
@@ -72,6 +73,12 @@ export type MediaDirectoryBrowserResponse = {
   current_path: string
   parent_path: string | null
   directories: MediaDirectory[]
+}
+
+export type FolderMappingPathTranslation = {
+  is_match: boolean
+  translated_path: string | null
+  message: string
 }
 
 export type AppSettings = {
@@ -284,6 +291,21 @@ export async function deleteFolderMapping(mappingId: number): Promise<void> {
   if (!response.ok) {
     throw new Error(`Failed to delete folder mapping: ${response.status}`)
   }
+}
+
+export async function previewFolderMappingTranslation(
+  mappingId: number,
+  filePath: string,
+): Promise<FolderMappingPathTranslation> {
+  const query = new URLSearchParams({
+    folder_mapping_id: String(mappingId),
+    file_path: filePath,
+  }).toString()
+  const response = await fetch(`${API_BASE}/api/onboarding/folder-mappings/translate-path?${query}`)
+  if (!response.ok) {
+    throw new Error(`Failed to preview folder mapping translation: ${response.status}`)
+  }
+  return response.json()
 }
 
 export async function fetchQualityProfiles(): Promise<QualityProfile[]> {

@@ -11,6 +11,7 @@ from app.models.app_setting import AppSetting
 from app.models.folder_mapping import FolderMapping
 from app.models.metadata_tag_rule import MetadataTagRule
 from app.models.quality_profile import QualityProfile
+from app.services.path_mapping import normalize_path_prefix, translate_path_prefix
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
@@ -28,6 +29,7 @@ DEFAULT_SCAN_SETTINGS = {
 class FolderMappingPayload(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     source_path: str
+    unmanic_path_prefix: str | None = None
     recursive: bool = True
     is_active: bool = True
     notes: str | None = None
@@ -106,6 +108,12 @@ class MediaDirectoryBrowserResponse(BaseModel):
     directories: list[MediaDirectoryRead]
 
 
+class FolderMappingPathTranslationRead(BaseModel):
+    is_match: bool
+    translated_path: str | None
+    message: str
+
+
 def _upsert_setting(db: Session, key: str, value: str) -> None:
     setting = db.query(AppSetting).filter(AppSetting.key == key).one_or_none()
     if setting is None:
@@ -128,6 +136,22 @@ def _has_child_directories(path: Path) -> bool:
         return any(child.is_dir() for child in path.iterdir())
     except OSError:
         return False
+
+
+def _normalize_optional_prefix(value: str | None) -> str | None:
+    if value is None:
+        return None
+    if not value.strip():
+        return None
+    return normalize_path_prefix(value)
+
+
+def _validate_absolute_prefix(value: str, field_name: str) -> None:
+    if not value.startswith("/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field_name} must be an absolute path",
+        )
 
 
 @router.get("/status", response_model=OnboardingStatus)
@@ -234,8 +258,16 @@ def create_folder_mapping(payload: FolderMappingPayload, db: Session = Depends(g
             detail="Folder mapping name already exists",
         )
 
+    normalized_source_path = normalize_path_prefix(payload.source_path)
+    normalized_unmanic_prefix = _normalize_optional_prefix(payload.unmanic_path_prefix)
+    _validate_absolute_prefix(normalized_source_path, "source_path")
+    if normalized_unmanic_prefix is not None:
+        _validate_absolute_prefix(normalized_unmanic_prefix, "unmanic_path_prefix")
+
     mapping_data = payload.model_dump()
     mapping_data["name"] = normalized_name
+    mapping_data["source_path"] = normalized_source_path
+    mapping_data["unmanic_path_prefix"] = normalized_unmanic_prefix
     mapping = FolderMapping(**mapping_data)
     db.add(mapping)
     db.commit()
@@ -263,8 +295,16 @@ def update_folder_mapping(
             detail="Folder mapping name already exists",
         )
 
+    normalized_source_path = normalize_path_prefix(payload.source_path)
+    normalized_unmanic_prefix = _normalize_optional_prefix(payload.unmanic_path_prefix)
+    _validate_absolute_prefix(normalized_source_path, "source_path")
+    if normalized_unmanic_prefix is not None:
+        _validate_absolute_prefix(normalized_unmanic_prefix, "unmanic_path_prefix")
+
     payload_data = payload.model_dump()
     payload_data["name"] = normalized_name
+    payload_data["source_path"] = normalized_source_path
+    payload_data["unmanic_path_prefix"] = normalized_unmanic_prefix
     for key, value in payload_data.items():
         setattr(mapping, key, value)
 
@@ -281,6 +321,35 @@ def delete_folder_mapping(mapping_id: int, db: Session = Depends(get_db)) -> Non
 
     db.delete(mapping)
     db.commit()
+
+
+@router.get("/folder-mappings/translate-path", response_model=FolderMappingPathTranslationRead)
+def preview_folder_mapping_translation(
+    folder_mapping_id: int = Query(...),
+    file_path: str = Query(...),
+    db: Session = Depends(get_db),
+) -> FolderMappingPathTranslationRead:
+    mapping = db.get(FolderMapping, folder_mapping_id)
+    if mapping is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder mapping not found")
+
+    if not mapping.unmanic_path_prefix:
+        return FolderMappingPathTranslationRead(
+            is_match=False,
+            translated_path=None,
+            message="No Unmanic path prefix configured for this mapping",
+        )
+
+    is_match, translated_path, message = translate_path_prefix(
+        source_path_prefix=mapping.source_path,
+        target_path_prefix=mapping.unmanic_path_prefix,
+        file_path=file_path,
+    )
+    return FolderMappingPathTranslationRead(
+        is_match=is_match,
+        translated_path=translated_path,
+        message=message,
+    )
 
 
 @router.get("/quality-profiles", response_model=list[QualityProfileRead])

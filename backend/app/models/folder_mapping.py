@@ -12,6 +12,7 @@ class FolderMapping(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     source_path: Mapped[str] = mapped_column(String(2048), unique=True, nullable=False)
+    unmanic_path_prefix: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     recursive: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

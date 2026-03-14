@@ -61,6 +61,7 @@ export function useMappingManagement({
       const updated = await updateFolderMapping(mapping.id, {
         name: mapping.name,
         source_path: mapping.source_path,
+        unmanic_path_prefix: mapping.unmanic_path_prefix,
         recursive: mapping.recursive,
         is_active: !mapping.is_active,
         notes: mapping.notes,
@@ -113,6 +114,7 @@ export function useMappingManagement({
     setEditingMappingForm({
       name: mapping.name,
       source_path: mapping.source_path,
+      unmanic_path_prefix: mapping.unmanic_path_prefix,
       recursive: mapping.recursive,
       is_active: mapping.is_active,
       notes: mapping.notes,

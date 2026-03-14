@@ -85,6 +85,7 @@ export function App() {
     handleCloseMediaBrowser,
     handleBrowseMediaPath,
     handleUseBrowsedPath,
+    handlePreviewMappingTranslation,
   } = useOnboarding({ setError })
 
   const {
@@ -194,6 +195,9 @@ export function App() {
           onStartMappingEdit={handleStartMappingEdit}
           onToggleMappingActive={(mapping) => void handleToggleMappingActive(mapping)}
           onUseBrowsedPath={handleUseBrowsedPath}
+          onPreviewMappingTranslation={(mappingId, filePath) =>
+            handlePreviewMappingTranslation(mappingId, filePath)
+          }
           profileForm={profileForm}
           profilesCount={profiles.length}
           scanSettingsForm={scanSettingsForm}

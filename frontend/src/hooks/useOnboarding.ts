@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import {
+  previewFolderMappingTranslation,
   fetchMediaDirectories,
   fetchFolderMappings,
   fetchMetadataTagRules,
@@ -10,6 +11,7 @@ import {
   fetchScanSettings,
   type FolderMapping,
   type FolderMappingPayload,
+  type FolderMappingPathTranslation,
   type MetadataTagRule,
   type MetadataTagRulePayload,
   type OnboardingStatus,
@@ -125,6 +127,13 @@ export function useOnboarding({ setError }: UseOnboardingArgs) {
     setMappingForm((current) => ({ ...current, source_path: path }))
   }
 
+  async function handlePreviewMappingTranslation(
+    mappingId: number,
+    filePath: string,
+  ): Promise<FolderMappingPathTranslation> {
+    return previewFolderMappingTranslation(mappingId, filePath)
+  }
+
   const {
     handleCreateMapping,
     handleToggleMappingActive,
@@ -196,6 +205,7 @@ export function useOnboarding({ setError }: UseOnboardingArgs) {
     handleCloseMediaBrowser,
     handleBrowseMediaPath,
     handleUseBrowsedPath,
+    handlePreviewMappingTranslation,
     handleCreateMapping,
     handleToggleMappingActive,
     handleDeleteMapping,

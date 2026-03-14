@@ -1,7 +1,8 @@
-import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 
 import {
   type FolderMapping,
+  type FolderMappingPathTranslation,
   type FolderMappingPayload,
   type MediaDirectoryBrowserResponse,
   type MetadataTagRulePayload,
@@ -45,6 +46,10 @@ type OnboardingPageProps = {
   onCloseMediaBrowser: () => void
   onBrowseMediaPath: (path: string) => void
   onUseBrowsedPath: (path: string) => void
+  onPreviewMappingTranslation: (
+    mappingId: number,
+    filePath: string,
+  ) => Promise<FolderMappingPathTranslation>
   setMappingForm: Dispatch<SetStateAction<FolderMappingPayload>>
   setProfileForm: Dispatch<SetStateAction<QualityProfilePayload>>
   setTagRuleForm: Dispatch<SetStateAction<MetadataTagRulePayload>>
@@ -84,6 +89,7 @@ export function OnboardingPage({
   onCloseMediaBrowser,
   onBrowseMediaPath,
   onUseBrowsedPath,
+  onPreviewMappingTranslation,
   setMappingForm,
   setProfileForm,
   setTagRuleForm,
@@ -91,6 +97,50 @@ export function OnboardingPage({
   setEditingMappingForm,
 }: OnboardingPageProps) {
   const [activeTab, setActiveTab] = useState<OnboardingTab>('folders')
+  const [translationMappingId, setTranslationMappingId] = useState<number | null>(null)
+  const [translationFilePath, setTranslationFilePath] = useState('')
+  const [translationResult, setTranslationResult] = useState<FolderMappingPathTranslation | null>(null)
+  const [translationLoading, setTranslationLoading] = useState(false)
+
+  useEffect(() => {
+    if (mappings.length === 0) {
+      setTranslationMappingId(null)
+      return
+    }
+
+    setTranslationMappingId((current) => {
+      if (current !== null && mappings.some((mapping) => mapping.id === current)) {
+        return current
+      }
+      return mappings[0].id
+    })
+  }, [mappings])
+
+  async function handlePreviewTranslation() {
+    if (translationMappingId === null || !translationFilePath.trim()) {
+      setTranslationResult({
+        is_match: false,
+        translated_path: null,
+        message: 'Select a mapping and enter a file path to test.',
+      })
+      return
+    }
+
+    setTranslationLoading(true)
+    setTranslationResult(null)
+    try {
+      const result = await onPreviewMappingTranslation(translationMappingId, translationFilePath.trim())
+      setTranslationResult(result)
+    } catch (error) {
+      setTranslationResult({
+        is_match: false,
+        translated_path: null,
+        message: error instanceof Error ? error.message : 'Unexpected error',
+      })
+    } finally {
+      setTranslationLoading(false)
+    }
+  }
 
   const tabStates: Record<OnboardingTab, boolean> = {
     folders: mappings.some((mapping) => mapping.is_active),
@@ -177,6 +227,19 @@ export function OnboardingPage({
                   Browse
                 </button>
               </div>
+            </label>
+            <label>
+              Unmanic path prefix
+              <input
+                placeholder="e.g. /library/movies"
+                value={mappingForm.unmanic_path_prefix ?? ''}
+                onChange={(event) =>
+                  setMappingForm((current) => ({
+                    ...current,
+                    unmanic_path_prefix: event.target.value || null,
+                  }))
+                }
+              />
             </label>
             {mediaBrowserOpen ? (
               <div className="media-browser">
@@ -274,6 +337,50 @@ export function OnboardingPage({
             <p className="muted">Configured mappings: {mappings.length}</p>
           </form>
 
+          <div className="composer">
+            <h3>Test Unmanic path mapping</h3>
+            <label>
+              Mapping
+              <select
+                value={translationMappingId === null ? '' : String(translationMappingId)}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setTranslationMappingId(value === '' ? null : Number(value))
+                }}
+              >
+                <option value="">Select mapping</option>
+                {mappings.map((mapping) => (
+                  <option key={mapping.id} value={mapping.id}>
+                    {mapping.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              File path
+              <input
+                placeholder="e.g. /media/movies/Movie/file.mkv"
+                value={translationFilePath}
+                onChange={(event) => setTranslationFilePath(event.target.value)}
+              />
+            </label>
+            <button
+              className="secondary-button"
+              disabled={translationLoading || mappings.length === 0}
+              onClick={() => void handlePreviewTranslation()}
+              type="button"
+            >
+              {translationLoading ? 'Testing...' : 'Test mapping'}
+            </button>
+            {translationResult ? (
+              <p className={translationResult.is_match ? 'success' : 'error'}>
+                {translationResult.is_match
+                  ? `Mapped path: ${translationResult.translated_path}`
+                  : translationResult.message}
+              </p>
+            ) : null}
+          </div>
+
           <div className="mapping-list">
             <div className="list-header">
               <h3>Mapped folders</h3>
@@ -308,6 +415,20 @@ export function OnboardingPage({
                           )
                         }
                         required
+                      />
+                    </label>
+                    <label>
+                      Unmanic path prefix
+                      <input
+                        placeholder="e.g. /library/movies"
+                        value={editingMappingForm.unmanic_path_prefix ?? ''}
+                        onChange={(event) =>
+                          setEditingMappingForm((current) =>
+                            current
+                              ? { ...current, unmanic_path_prefix: event.target.value || null }
+                              : current,
+                          )
+                        }
                       />
                     </label>
                     <label>
@@ -367,6 +488,9 @@ export function OnboardingPage({
                     <div className="mapping-details">
                       <p className="mapping-name">{mapping.name}</p>
                       <p className="mapping-path">{mapping.source_path}</p>
+                      {mapping.unmanic_path_prefix ? (
+                        <p className="mapping-path">Unmanic: {mapping.unmanic_path_prefix}</p>
+                      ) : null}
                       <p className="muted">
                         {mapping.recursive ? 'Recursive' : 'Non-recursive'} ·{' '}
                         {mapping.is_active ? 'Active' : 'Inactive'}

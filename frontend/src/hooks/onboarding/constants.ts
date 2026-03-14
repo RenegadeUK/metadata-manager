@@ -3,6 +3,7 @@ import { type FolderMappingPayload, type MetadataTagRulePayload, type QualityPro
 export const INITIAL_MAPPING: FolderMappingPayload = {
   name: 'Primary media folder',
   source_path: '/media',
+  unmanic_path_prefix: null,
   recursive: true,
   is_active: true,
   notes: null,
