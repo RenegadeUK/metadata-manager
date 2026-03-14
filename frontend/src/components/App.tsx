@@ -127,6 +127,10 @@ export function App() {
   function renderPage() {
     if (activePage === 'dashboard') {
       const latestRun = scanRuns[0]
+      const totalCatalogedFiles = folderSummary.reduce(
+        (total, summaryRow) => total + summaryRow.file_count,
+        0,
+      )
       return (
         <DashboardPage
           activeMappingsCount={mappings.filter((mapping) => mapping.is_active).length}
@@ -136,7 +140,7 @@ export function App() {
           missingRequirementsCount={onboardingStatus?.missing_requirements.length ?? 0}
           onboardingReady={onboardingStatus?.ready ?? false}
           profilesCount={profiles.length}
-          resultsCount={results.length}
+          resultsCount={totalCatalogedFiles}
           scanActionLoading={scanActionLoading}
           scanActionMessage={scanActionMessage}
           scanRunsCount={scanRuns.length}
