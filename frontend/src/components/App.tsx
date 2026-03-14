@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { PageHeader } from './layout/PageHeader'
 import { SidebarNav } from './layout/SidebarNav'
+import { DashboardPage } from './pages/DashboardPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { RuntimeSettingsPage } from './pages/RuntimeSettingsPage'
@@ -13,6 +14,7 @@ import { type AppPage } from './types'
 import '../styles/app.css'
 
 const PAGE_LABELS: Record<AppPage, string> = {
+  dashboard: 'Dashboard',
   onboarding: 'Onboarding',
   runtime: 'Runtime settings',
   seed: 'Seed data',
@@ -20,17 +22,18 @@ const PAGE_LABELS: Record<AppPage, string> = {
 }
 
 const PAGE_DESCRIPTIONS: Record<AppPage, string> = {
+  dashboard: 'Operational overview of setup readiness and core metric levels.',
   onboarding: 'Set folder mappings, quality profiles, tag rules, and scan settings.',
   runtime: 'Manage persisted runtime values written to /config/.env.',
   seed: 'Create seed records for quick API validation.',
   items: 'Browse and refresh stored records.',
 }
 
-const APP_PAGES: AppPage[] = ['onboarding', 'runtime', 'seed', 'items']
+const APP_PAGES: AppPage[] = ['dashboard', 'onboarding', 'runtime', 'seed', 'items']
 
 export function App() {
   const restartCommand = 'docker compose restart app'
-  const [activePage, setActivePage] = useState<AppPage>('onboarding')
+  const [activePage, setActivePage] = useState<AppPage>('dashboard')
   const [error, setError] = useState<string | null>(null)
 
   const {
@@ -97,6 +100,19 @@ export function App() {
   } = useOnboarding({ setError })
 
   function renderPage() {
+    if (activePage === 'dashboard') {
+      return (
+        <DashboardPage
+          activeMappingsCount={mappings.filter((mapping) => mapping.is_active).length}
+          itemsCount={items.length}
+          missingRequirementsCount={onboardingStatus?.missing_requirements.length ?? 0}
+          onboardingReady={onboardingStatus?.ready ?? false}
+          profilesCount={profiles.length}
+          tagRulesCount={tagRules.length}
+        />
+      )
+    }
+
     if (activePage === 'onboarding') {
       return (
         <OnboardingPage

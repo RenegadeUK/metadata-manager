@@ -1,4 +1,4 @@
-export type AppPage = 'onboarding' | 'runtime' | 'seed' | 'items'
+export type AppPage = 'dashboard' | 'onboarding' | 'runtime' | 'seed' | 'items'
 
 export type MappingFeedback = {
   mappingId: number

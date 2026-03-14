@@ -1,4 +1,4 @@
-import { type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 
 import {
   type FolderMapping,
@@ -10,6 +10,8 @@ import {
   type ScanSettings,
 } from '../../lib/api'
 import { type MappingFeedback } from '../types'
+
+type OnboardingTab = 'folders' | 'quality' | 'tags' | 'scan'
 
 type OnboardingPageProps = {
   onboardingStatus: OnboardingStatus | null
@@ -88,6 +90,26 @@ export function OnboardingPage({
   setScanSettingsForm,
   setEditingMappingForm,
 }: OnboardingPageProps) {
+  const [activeTab, setActiveTab] = useState<OnboardingTab>('folders')
+
+  const tabStates: Record<OnboardingTab, boolean> = {
+    folders: mappings.some((mapping) => mapping.is_active),
+    quality: profilesCount > 0,
+    tags: tagRulesCount > 0,
+    scan:
+      scanSettingsForm['scan.include_extensions'].trim().length > 0 &&
+      scanSettingsForm['scan.ffprobe_timeout_seconds'].trim().length > 0,
+  }
+
+  const tabLabels: Record<OnboardingTab, string> = {
+    folders: 'Folders',
+    quality: 'Quality',
+    tags: 'Tags',
+    scan: 'Scan',
+  }
+
+  const tabs: OnboardingTab[] = ['folders', 'quality', 'tags', 'scan']
+
   return (
     <section className="panel onboarding-panel">
       <div className="list-header">
@@ -107,380 +129,408 @@ export function OnboardingPage({
             : `Missing: ${onboardingStatus.missing_requirements.join(', ')}`}
         </p>
       ) : null}
+      {onboardingMessage ? <p className="success">{onboardingMessage}</p> : null}
 
-      <form className="composer" onSubmit={onCreateMapping}>
-        <h3>Folder mapping</h3>
-        <label>
-          Name
-          <input
-            value={mappingForm.name}
-            onChange={(event) =>
-              setMappingForm((current) => ({ ...current, name: event.target.value }))
-            }
-            required
-          />
-        </label>
-        <label>
-          Source path
-          <div className="source-path-row">
-            <input
-              value={mappingForm.source_path}
-              onChange={(event) =>
-                setMappingForm((current) => ({ ...current, source_path: event.target.value }))
-              }
-              required
-            />
-            <button className="secondary-button" onClick={onOpenMediaBrowser} type="button">
-              Browse
-            </button>
-          </div>
-        </label>
-        {mediaBrowserOpen ? (
-          <div className="media-browser">
-            <div className="media-browser-toolbar">
-              <button
-                className="secondary-button"
-                disabled={mediaBrowserLoading}
-                onClick={() => {
-                  const parent = mediaDirectoryBrowser?.parent_path
-                  if (parent) {
-                    onBrowseMediaPath(parent)
-                  }
-                }}
-                type="button"
-              >
-                Up
-              </button>
-              <button
-                className="secondary-button"
-                disabled={mediaBrowserLoading}
-                onClick={() =>
-                  onBrowseMediaPath(mediaDirectoryBrowser?.current_path ?? mappingForm.source_path)
-                }
-                type="button"
-              >
-                Refresh
-              </button>
-              <button
-                className="secondary-button"
-                disabled={!mediaDirectoryBrowser}
-                onClick={() => {
-                  if (mediaDirectoryBrowser) {
-                    onUseBrowsedPath(mediaDirectoryBrowser.current_path)
-                  }
-                }}
-                type="button"
-              >
-                Use current
-              </button>
-              <button className="secondary-button" onClick={onCloseMediaBrowser} type="button">
-                Close
-              </button>
-            </div>
-            <p className="muted">
-              Current: {mediaDirectoryBrowser?.current_path ?? mappingForm.source_path}
-            </p>
-            {mediaBrowserLoading ? <p className="muted">Loading directories...</p> : null}
-            {mediaBrowserError ? <p className="error">{mediaBrowserError}</p> : null}
-            <ul className="media-browser-list">
-              {(mediaDirectoryBrowser?.directories ?? []).map((directory) => (
-                <li key={directory.path}>
-                  <button
-                    className="secondary-button"
-                    onClick={() => onBrowseMediaPath(directory.path)}
-                    type="button"
-                  >
-                    {directory.name}
-                    {directory.has_children ? ' /' : ''}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        <label>
-          Notes
-          <input
-            value={mappingForm.notes ?? ''}
-            onChange={(event) =>
-              setMappingForm((current) => ({ ...current, notes: event.target.value || null }))
-            }
-          />
-        </label>
-        <label className="toggle-row">
-          <input
-            checked={mappingForm.recursive}
-            onChange={(event) =>
-              setMappingForm((current) => ({ ...current, recursive: event.target.checked }))
-            }
-            type="checkbox"
-          />
-          Recursive
-        </label>
-        <label className="toggle-row">
-          <input
-            checked={mappingForm.is_active}
-            onChange={(event) =>
-              setMappingForm((current) => ({ ...current, is_active: event.target.checked }))
-            }
-            type="checkbox"
-          />
-          Active
-        </label>
-        <button disabled={onboardingSaving} type="submit">Save mapping</button>
-        <p className="muted">Configured mappings: {mappings.length}</p>
-      </form>
-
-      <div className="mapping-list">
-        <div className="list-header">
-          <h3>Mapped folders</h3>
-        </div>
-        {mappings.length === 0 ? <p className="muted">No folder mappings yet.</p> : null}
-        {mappings.map((mapping) => (
-          <article className="mapping-card" key={mapping.id}>
-            {editingMappingId === mapping.id && editingMappingForm ? (
-              <form
-                className="composer mapping-edit-form"
-                onSubmit={(event) => onSaveMappingEdit(event, mapping.id)}
-              >
-                <label>
-                  Name
-                  <input
-                    value={editingMappingForm.name}
-                    onChange={(event) =>
-                      setEditingMappingForm((current) =>
-                        current ? { ...current, name: event.target.value } : current,
-                      )
-                    }
-                    required
-                  />
-                </label>
-                <label>
-                  Source path
-                  <input
-                    value={editingMappingForm.source_path}
-                    onChange={(event) =>
-                      setEditingMappingForm((current) =>
-                        current ? { ...current, source_path: event.target.value } : current,
-                      )
-                    }
-                    required
-                  />
-                </label>
-                <label>
-                  Notes
-                  <input
-                    value={editingMappingForm.notes ?? ''}
-                    onChange={(event) =>
-                      setEditingMappingForm((current) =>
-                        current ? { ...current, notes: event.target.value || null } : current,
-                      )
-                    }
-                  />
-                </label>
-                <label className="toggle-row">
-                  <input
-                    checked={editingMappingForm.recursive}
-                    onChange={(event) =>
-                      setEditingMappingForm((current) =>
-                        current ? { ...current, recursive: event.target.checked } : current,
-                      )
-                    }
-                    type="checkbox"
-                  />
-                  Recursive
-                </label>
-                <label className="toggle-row">
-                  <input
-                    checked={editingMappingForm.is_active}
-                    onChange={(event) =>
-                      setEditingMappingForm((current) =>
-                        current ? { ...current, is_active: event.target.checked } : current,
-                      )
-                    }
-                    type="checkbox"
-                  />
-                  Active
-                </label>
-                <div className="mapping-actions">
-                  <button disabled={onboardingSaving} type="submit">Save changes</button>
-                  <button
-                    className="secondary-button"
-                    disabled={onboardingSaving}
-                    onClick={onCancelMappingEdit}
-                    type="button"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {mappingFeedback?.mappingId === mapping.id ? (
-                  <p className={mappingFeedback.kind === 'success' ? 'success' : 'error'}>
-                    {mappingFeedback.message}
-                  </p>
-                ) : null}
-              </form>
-            ) : (
-              <>
-                <div className="mapping-details">
-                  <p className="mapping-name">{mapping.name}</p>
-                  <p className="mapping-path">{mapping.source_path}</p>
-                  <p className="muted">
-                    {mapping.recursive ? 'Recursive' : 'Non-recursive'} ·{' '}
-                    {mapping.is_active ? 'Active' : 'Inactive'}
-                  </p>
-                  {mapping.notes ? <p className="muted">{mapping.notes}</p> : null}
-                </div>
-                <div className="mapping-actions">
-                  <button
-                    className="secondary-button"
-                    disabled={onboardingSaving}
-                    onClick={() => onStartMappingEdit(mapping)}
-                    type="button"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={onboardingSaving}
-                    onClick={() => onToggleMappingActive(mapping)}
-                    type="button"
-                  >
-                    {mapping.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button
-                    className="danger-button"
-                    disabled={onboardingSaving}
-                    onClick={() => onDeleteMapping(mapping.id)}
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-                {mappingFeedback?.mappingId === mapping.id ? (
-                  <p className={mappingFeedback.kind === 'success' ? 'success' : 'error'}>
-                    {mappingFeedback.message}
-                  </p>
-                ) : null}
-              </>
-            )}
-          </article>
+      <div className="onboarding-tabs" role="tablist" aria-label="Onboarding sections">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            className={activeTab === tab ? 'tab-button tab-button-active' : 'tab-button'}
+            onClick={() => setActiveTab(tab)}
+            aria-selected={activeTab === tab}
+          >
+            <span>{tabLabels[tab]}</span>
+            <span className={tabStates[tab] ? 'tab-indicator-ok' : 'tab-indicator-missing'}>
+              {tabStates[tab] ? '✓' : '✕'}
+            </span>
+          </button>
         ))}
       </div>
 
-      <form className="composer" onSubmit={onCreateProfile}>
-        <h3>Quality profile</h3>
-        <label>
-          Name
-          <input
-            value={profileForm.name}
-            onChange={(event) =>
-              setProfileForm((current) => ({ ...current, name: event.target.value }))
-            }
-            required
-          />
-        </label>
-        <label>
-          Codec
-          <input
-            value={profileForm.codec}
-            onChange={(event) =>
-              setProfileForm((current) => ({ ...current, codec: event.target.value }))
-            }
-            required
-          />
-        </label>
-        <label>
-          Pixel format
-          <input
-            value={profileForm.pixel_format ?? ''}
-            onChange={(event) =>
-              setProfileForm((current) => ({ ...current, pixel_format: event.target.value || null }))
-            }
-          />
-        </label>
-        <button disabled={onboardingSaving} type="submit">Save profile</button>
-        <p className="muted">Configured profiles: {profilesCount}</p>
-      </form>
+      {activeTab === 'folders' ? (
+        <>
+          <form className="composer" onSubmit={onCreateMapping}>
+            <h3>Folder mapping</h3>
+            <label>
+              Name
+              <input
+                value={mappingForm.name}
+                onChange={(event) =>
+                  setMappingForm((current) => ({ ...current, name: event.target.value }))
+                }
+                required
+              />
+            </label>
+            <label>
+              Source path
+              <div className="source-path-row">
+                <input
+                  value={mappingForm.source_path}
+                  onChange={(event) =>
+                    setMappingForm((current) => ({ ...current, source_path: event.target.value }))
+                  }
+                  required
+                />
+                <button className="secondary-button" onClick={onOpenMediaBrowser} type="button">
+                  Browse
+                </button>
+              </div>
+            </label>
+            {mediaBrowserOpen ? (
+              <div className="media-browser">
+                <div className="media-browser-toolbar">
+                  <button
+                    className="secondary-button"
+                    disabled={mediaBrowserLoading}
+                    onClick={() => {
+                      const parent = mediaDirectoryBrowser?.parent_path
+                      if (parent) {
+                        onBrowseMediaPath(parent)
+                      }
+                    }}
+                    type="button"
+                  >
+                    Up
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={mediaBrowserLoading}
+                    onClick={() =>
+                      onBrowseMediaPath(mediaDirectoryBrowser?.current_path ?? mappingForm.source_path)
+                    }
+                    type="button"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={!mediaDirectoryBrowser}
+                    onClick={() => {
+                      if (mediaDirectoryBrowser) {
+                        onUseBrowsedPath(mediaDirectoryBrowser.current_path)
+                      }
+                    }}
+                    type="button"
+                  >
+                    Use current
+                  </button>
+                  <button className="secondary-button" onClick={onCloseMediaBrowser} type="button">
+                    Close
+                  </button>
+                </div>
+                <p className="muted">
+                  Current: {mediaDirectoryBrowser?.current_path ?? mappingForm.source_path}
+                </p>
+                {mediaBrowserLoading ? <p className="muted">Loading directories...</p> : null}
+                {mediaBrowserError ? <p className="error">{mediaBrowserError}</p> : null}
+                <ul className="media-browser-list">
+                  {(mediaDirectoryBrowser?.directories ?? []).map((directory) => (
+                    <li key={directory.path}>
+                      <button
+                        className="secondary-button"
+                        onClick={() => onBrowseMediaPath(directory.path)}
+                        type="button"
+                      >
+                        {directory.name}
+                        {directory.has_children ? ' /' : ''}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <label>
+              Notes
+              <input
+                value={mappingForm.notes ?? ''}
+                onChange={(event) =>
+                  setMappingForm((current) => ({ ...current, notes: event.target.value || null }))
+                }
+              />
+            </label>
+            <label className="toggle-row">
+              <input
+                checked={mappingForm.recursive}
+                onChange={(event) =>
+                  setMappingForm((current) => ({ ...current, recursive: event.target.checked }))
+                }
+                type="checkbox"
+              />
+              Recursive
+            </label>
+            <label className="toggle-row">
+              <input
+                checked={mappingForm.is_active}
+                onChange={(event) =>
+                  setMappingForm((current) => ({ ...current, is_active: event.target.checked }))
+                }
+                type="checkbox"
+              />
+              Active
+            </label>
+            <button disabled={onboardingSaving} type="submit">Save mapping</button>
+            <p className="muted">Configured mappings: {mappings.length}</p>
+          </form>
 
-      <form className="composer" onSubmit={onCreateTagRule}>
-        <h3>Metadata tag rule</h3>
-        <label>
-          Name
-          <input
-            value={tagRuleForm.name}
-            onChange={(event) =>
-              setTagRuleForm((current) => ({ ...current, name: event.target.value }))
-            }
-            required
-          />
-        </label>
-        <label>
-          Tag key
-          <input
-            value={tagRuleForm.tag_key}
-            onChange={(event) =>
-              setTagRuleForm((current) => ({ ...current, tag_key: event.target.value }))
-            }
-            required
-          />
-        </label>
-        <label>
-          Tag value
-          <input
-            value={tagRuleForm.tag_value}
-            onChange={(event) =>
-              setTagRuleForm((current) => ({ ...current, tag_value: event.target.value }))
-            }
-            required
-          />
-        </label>
-        <button disabled={onboardingSaving} type="submit">Save tag rule</button>
-        <p className="muted">Configured tag rules: {tagRulesCount}</p>
-      </form>
+          <div className="mapping-list">
+            <div className="list-header">
+              <h3>Mapped folders</h3>
+            </div>
+            {mappings.length === 0 ? <p className="muted">No folder mappings yet.</p> : null}
+            {mappings.map((mapping) => (
+              <article className="mapping-card" key={mapping.id}>
+                {editingMappingId === mapping.id && editingMappingForm ? (
+                  <form
+                    className="composer mapping-edit-form"
+                    onSubmit={(event) => onSaveMappingEdit(event, mapping.id)}
+                  >
+                    <label>
+                      Name
+                      <input
+                        value={editingMappingForm.name}
+                        onChange={(event) =>
+                          setEditingMappingForm((current) =>
+                            current ? { ...current, name: event.target.value } : current,
+                          )
+                        }
+                        required
+                      />
+                    </label>
+                    <label>
+                      Source path
+                      <input
+                        value={editingMappingForm.source_path}
+                        onChange={(event) =>
+                          setEditingMappingForm((current) =>
+                            current ? { ...current, source_path: event.target.value } : current,
+                          )
+                        }
+                        required
+                      />
+                    </label>
+                    <label>
+                      Notes
+                      <input
+                        value={editingMappingForm.notes ?? ''}
+                        onChange={(event) =>
+                          setEditingMappingForm((current) =>
+                            current ? { ...current, notes: event.target.value || null } : current,
+                          )
+                        }
+                      />
+                    </label>
+                    <label className="toggle-row">
+                      <input
+                        checked={editingMappingForm.recursive}
+                        onChange={(event) =>
+                          setEditingMappingForm((current) =>
+                            current ? { ...current, recursive: event.target.checked } : current,
+                          )
+                        }
+                        type="checkbox"
+                      />
+                      Recursive
+                    </label>
+                    <label className="toggle-row">
+                      <input
+                        checked={editingMappingForm.is_active}
+                        onChange={(event) =>
+                          setEditingMappingForm((current) =>
+                            current ? { ...current, is_active: event.target.checked } : current,
+                          )
+                        }
+                        type="checkbox"
+                      />
+                      Active
+                    </label>
+                    <div className="mapping-actions">
+                      <button disabled={onboardingSaving} type="submit">Save changes</button>
+                      <button
+                        className="secondary-button"
+                        disabled={onboardingSaving}
+                        onClick={onCancelMappingEdit}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {mappingFeedback?.mappingId === mapping.id ? (
+                      <p className={mappingFeedback.kind === 'success' ? 'success' : 'error'}>
+                        {mappingFeedback.message}
+                      </p>
+                    ) : null}
+                  </form>
+                ) : (
+                  <>
+                    <div className="mapping-details">
+                      <p className="mapping-name">{mapping.name}</p>
+                      <p className="mapping-path">{mapping.source_path}</p>
+                      <p className="muted">
+                        {mapping.recursive ? 'Recursive' : 'Non-recursive'} ·{' '}
+                        {mapping.is_active ? 'Active' : 'Inactive'}
+                      </p>
+                      {mapping.notes ? <p className="muted">{mapping.notes}</p> : null}
+                    </div>
+                    <div className="mapping-actions">
+                      <button
+                        className="secondary-button"
+                        disabled={onboardingSaving}
+                        onClick={() => onStartMappingEdit(mapping)}
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="secondary-button"
+                        disabled={onboardingSaving}
+                        onClick={() => onToggleMappingActive(mapping)}
+                        type="button"
+                      >
+                        {mapping.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        className="danger-button"
+                        disabled={onboardingSaving}
+                        onClick={() => onDeleteMapping(mapping.id)}
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    {mappingFeedback?.mappingId === mapping.id ? (
+                      <p className={mappingFeedback.kind === 'success' ? 'success' : 'error'}>
+                        {mappingFeedback.message}
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </article>
+            ))}
+          </div>
+        </>
+      ) : null}
 
-      <form className="composer" onSubmit={onSaveScanSettings}>
-        <h3>Scan settings</h3>
-        <label>
-          Include extensions
-          <input
-            value={scanSettingsForm['scan.include_extensions']}
-            onChange={(event) =>
-              setScanSettingsForm((current) => ({
-                ...current,
-                'scan.include_extensions': event.target.value,
-              }))
-            }
-            required
-          />
-        </label>
-        <label>
-          Exclude patterns
-          <input
-            value={scanSettingsForm['scan.exclude_patterns']}
-            onChange={(event) =>
-              setScanSettingsForm((current) => ({
-                ...current,
-                'scan.exclude_patterns': event.target.value,
-              }))
-            }
-          />
-        </label>
-        <label>
-          ffprobe timeout seconds
-          <input
-            value={scanSettingsForm['scan.ffprobe_timeout_seconds']}
-            onChange={(event) =>
-              setScanSettingsForm((current) => ({
-                ...current,
-                'scan.ffprobe_timeout_seconds': event.target.value,
-              }))
-            }
-            required
-          />
-        </label>
-        <button disabled={onboardingSaving} type="submit">Save scan settings</button>
-        {onboardingMessage ? <p className="success">{onboardingMessage}</p> : null}
-      </form>
+      {activeTab === 'quality' ? (
+        <form className="composer" onSubmit={onCreateProfile}>
+          <h3>Quality profile</h3>
+          <label>
+            Name
+            <input
+              value={profileForm.name}
+              onChange={(event) =>
+                setProfileForm((current) => ({ ...current, name: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <label>
+            Codec
+            <input
+              value={profileForm.codec}
+              onChange={(event) =>
+                setProfileForm((current) => ({ ...current, codec: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <label>
+            Pixel format
+            <input
+              value={profileForm.pixel_format ?? ''}
+              onChange={(event) =>
+                setProfileForm((current) => ({ ...current, pixel_format: event.target.value || null }))
+              }
+            />
+          </label>
+          <button disabled={onboardingSaving} type="submit">Save profile</button>
+          <p className="muted">Configured profiles: {profilesCount}</p>
+        </form>
+      ) : null}
+
+      {activeTab === 'tags' ? (
+        <form className="composer" onSubmit={onCreateTagRule}>
+          <h3>Metadata tag rule</h3>
+          <label>
+            Name
+            <input
+              value={tagRuleForm.name}
+              onChange={(event) =>
+                setTagRuleForm((current) => ({ ...current, name: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <label>
+            Tag key
+            <input
+              value={tagRuleForm.tag_key}
+              onChange={(event) =>
+                setTagRuleForm((current) => ({ ...current, tag_key: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <label>
+            Tag value
+            <input
+              value={tagRuleForm.tag_value}
+              onChange={(event) =>
+                setTagRuleForm((current) => ({ ...current, tag_value: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <button disabled={onboardingSaving} type="submit">Save tag rule</button>
+          <p className="muted">Configured tag rules: {tagRulesCount}</p>
+        </form>
+      ) : null}
+
+      {activeTab === 'scan' ? (
+        <form className="composer" onSubmit={onSaveScanSettings}>
+          <h3>Scan settings</h3>
+          <label>
+            Include extensions
+            <input
+              value={scanSettingsForm['scan.include_extensions']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.include_extensions': event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
+          <label>
+            Exclude patterns
+            <input
+              value={scanSettingsForm['scan.exclude_patterns']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.exclude_patterns': event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label>
+            ffprobe timeout seconds
+            <input
+              value={scanSettingsForm['scan.ffprobe_timeout_seconds']}
+              onChange={(event) =>
+                setScanSettingsForm((current) => ({
+                  ...current,
+                  'scan.ffprobe_timeout_seconds': event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
+          <button disabled={onboardingSaving} type="submit">Save scan settings</button>
+        </form>
+      ) : null}
     </section>
   )
 }

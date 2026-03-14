@@ -168,6 +168,60 @@ button {
   margin: 0;
 }
 
+.onboarding-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4efe5;
+}
+
+.tab-button-active {
+  background: linear-gradient(135deg, #f48148, #f7bf73);
+  color: #081018;
+}
+
+.tab-indicator-ok {
+  color: #9af0a8;
+  font-weight: 700;
+}
+
+.tab-indicator-missing {
+  color: #ff9f8d;
+  font-weight: 700;
+}
+
+.dashboard-panel {
+  display: grid;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.metric-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metric-value {
+  margin: 6px 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
 .mapping-list {
   display: grid;
   gap: 12px;
