@@ -51,6 +51,7 @@ class MediaFileScanRead(BaseModel):
     video_profile: str | None
     tag_key: str | None
     tag_value: str | None
+    all_tags_json: str | None
     quality_status: str
     tag_status: str
     probe_error: str | None

@@ -31,6 +31,7 @@ class MediaFileScan(Base):
     video_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
     tag_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tag_value: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    all_tags_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     quality_status: Mapped[str] = mapped_column(String(50), nullable=False, default="unknown")
     tag_status: Mapped[str] = mapped_column(String(50), nullable=False, default="unknown")
     probe_error: Mapped[str | None] = mapped_column(Text, nullable=True)

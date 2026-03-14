@@ -116,6 +116,7 @@ export type MediaFileScanResult = {
   video_profile: string | null
   tag_key: string | null
   tag_value: string | null
+  all_tags_json: string | null
   quality_status: string
   tag_status: string
   probe_error: string | null

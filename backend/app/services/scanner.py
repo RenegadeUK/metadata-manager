@@ -229,6 +229,12 @@ def _evaluate_tag(probe_data: dict[str, Any], rule: MetadataTagRule) -> tuple[st
     return ("tag_match" if value_str == expected else "tag_mismatch", value_str)
 
 
+def _serialize_tags(tags: dict[str, Any]) -> str | None:
+    if not tags:
+        return None
+    return json.dumps(tags, sort_keys=True)
+
+
 def _create_run(db: Session, run_type: str) -> ScanRun:
     run = ScanRun(run_type=run_type, status="running")
     db.add(run)
@@ -559,6 +565,7 @@ def _interrogation_worker(
         media_row.video_profile = probe_data.get("video_profile")
         media_row.tag_key = active_tag_rule.tag_key
         media_row.tag_value = tag_value
+        media_row.all_tags_json = _serialize_tags(probe_data.get("tags") or {})
         media_row.quality_status = quality_status
         media_row.tag_status = tag_status
         media_row.probe_error = probe_data.get("probe_error")
@@ -765,6 +772,7 @@ def interrogate_scan_result(db: Session, result_id: int) -> MediaFileScan:
         media_row.video_profile = probe_data.get("video_profile")
         media_row.tag_key = active_tag_rule.tag_key
         media_row.tag_value = tag_value
+        media_row.all_tags_json = _serialize_tags(probe_data.get("tags") or {})
         media_row.quality_status = quality_status
         media_row.tag_status = tag_status
         media_row.probe_error = probe_data.get("probe_error")
